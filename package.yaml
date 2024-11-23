@@ -1,10 +1,10 @@
-name:                AdventOfCode2022
+name:                aoc-moribund-aardvark
 version:             0.1.0.0
-github:              "githubuser/AdventOfCode2022"
+github:              "alyssaruth/aoc-moribund-aardvark"
 license:             BSD3
-author:              "Raphael Colman"
+author:              "Alyss Burlton"
 maintainer:          "example@example.com"
-copyright:           "2022 Raphael Colman"
+copyright:           "2024 Alyssa Burlton"
 
 extra-source-files:
 - README.md
@@ -47,7 +47,7 @@ library:
   source-dirs: src
 
 executables:
-  AdventOfCode2022-exe:
+  aoc-moribund-aardvark-exe:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -55,10 +55,10 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - AdventOfCode2022
+    - aoc-moribund-aardvark
 
 tests:
-  AdventOfCode2022-test:
+  aoc-moribund-aardvark-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -66,4 +66,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - AdventOfCode2022
+    - aoc-moribund-aardvark
