@@ -22,7 +22,7 @@ part1 :: CalibrationLines -> Int
 part1 = sum . map calibrationValue
 
 part2 :: CalibrationLines -> Int
-part2 x = sum ( map calibrationValue (map validNumbers x) )
+part2 = sum . map (calibrationValue . validNumbers)
 
 calibrationValue :: String -> Int
 calibrationValue x = read [firstNumber x, lastNumber x]
