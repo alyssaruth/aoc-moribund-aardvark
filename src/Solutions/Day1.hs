@@ -6,7 +6,7 @@ import           Common.AoCSolutions (AoCSolution (MkAoCSolution),
                                       printSolutions, printTestSolutions)
 import           Data.List           (tails)
 import           Data.Char           (isDigit)
-import           Text.Trifecta       (Parser, TokenParsing (token), letter,
+import           Text.Trifecta       (Parser, TokenParsing (token), alphaNum,
                                       some)
 import Common.ListUtils (window3, window2)
 
@@ -19,7 +19,7 @@ type CalibrationLines = [String]
 
 parseInput :: Parser CalibrationLines
 parseInput = do
-  some $ token $ some letter
+  some $ token $ some alphaNum
 
 part1 :: CalibrationLines -> Int
 part1 x = sum (map calibrationValue x)
