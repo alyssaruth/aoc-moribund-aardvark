@@ -5,7 +5,8 @@ module Solutions.Day1
 import           Common.AoCSolutions (AoCSolution (MkAoCSolution),
                                       printSolutions, printTestSolutions)
 import           Data.List           (tails)
-import           Text.Trifecta       (Parser, TokenParsing (token), integer,
+import           Data.Char           (isDigit)
+import           Text.Trifecta       (Parser, TokenParsing (token), letter,
                                       some)
 import Common.ListUtils (window3, window2)
 
@@ -14,17 +15,23 @@ aoc1 = do
   printSolutions 1 $ MkAoCSolution parseInput part1
   printSolutions 1 $ MkAoCSolution parseInput part2
 
-type Depths = [Integer]
+type CalibrationLines = [String]
 
-parseInput :: Parser Depths
+parseInput :: Parser CalibrationLines
 parseInput = do
-  some $ token integer
+  some $ token $ some letter
 
-part1 :: Depths -> Int
-part1 = sonarSweep
+part1 :: CalibrationLines -> Int
+part1 x = sum (map calibrationValue x)
 
-part2 :: Depths -> Int
-part2 = sonarSweep . map (\(x, y, z) -> x + y + z) . window3
+part2 :: CalibrationLines -> Int
+part2 x = 10
 
-sonarSweep :: Depths -> Int
-sonarSweep = length . filter id . map (\(x, y) -> y > x) . window2
+calibrationValue :: String -> Int
+calibrationValue x = read ([(firstNumber x)] ++ [(lastNumber x)])
+
+firstNumber :: String -> Char
+firstNumber x = (head ( filter isDigit x ) )
+
+lastNumber :: String -> Char
+lastNumber x = firstNumber ( reverse x )
