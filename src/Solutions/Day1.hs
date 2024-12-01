@@ -23,16 +23,16 @@ parseInput = do
             pure (a,b)
 
 part1 :: [(Integer, Integer)] -> Integer
-part1 x = sum (map diff (zip (sortedList fst x) (sortedList snd x)))
+part1 x = sum $ map diff (zip (sortedList fst x) (sortedList snd x))
 
 sortedList :: ((Integer, Integer) -> Integer) -> [(Integer, Integer)] -> [Integer]
-sortedList fn list = sort (map fn list)
+sortedList fn list = sort $ map fn list
 
 diff :: (Integer, Integer) -> Integer
-diff x = abs (snd x - fst x)
+diff x = abs $ snd x - fst x
 
 part2 :: [(Integer, Integer)] -> Integer
-part2 x = sum (map (similarityScore (sortedList snd x)) (sortedList fst x))
+part2 x = sum $ map (similarityScore (sortedList snd x)) (sortedList fst x)
 
 similarityScore :: [Integer] -> Integer -> Integer
 similarityScore xs x = x * (genericLength [a | a <- xs, a == x])
