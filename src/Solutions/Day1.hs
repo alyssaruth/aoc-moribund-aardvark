@@ -1,40 +1,44 @@
-module Solutions.Day1
-  where
+module Solutions.Day1 where
 
-import           Common.AoCSolutions (AoCSolution (MkAoCSolution),
-                                      printSolutions, printTestSolutions)
-import           Text.Trifecta       (CharParsing (anyChar), Parser,
-                                      TokenParsing (token), count, integer,
-                                      some)
-import           Data.List
+import Common.AoCSolutions
+  ( AoCSolution (MkAoCSolution),
+    printSolutions,
+    printTestSolutions,
+  )
+import Data.List
+import Text.Trifecta
+  ( Parser,
+    TokenParsing (token),
+    count,
+    integer,
+    some,
+  )
 
 aoc1 :: IO ()
 aoc1 = do
   printSolutions 1 $ MkAoCSolution parseInput part1
   printSolutions 1 $ MkAoCSolution parseInput part2
 
-
 parseInput :: Parser [(Integer, Integer)]
 parseInput = do
   some $ token parsePair
-  where parsePair :: Parser (Integer, Integer)
-        parsePair = do
-            [a,b] <- count 2 integer
-            pure (a,b)
+
+parsePair :: Parser (Integer, Integer)
+parsePair = do
+  [a, b] <- count 2 integer
+  pure (a, b)
 
 part1 :: [(Integer, Integer)] -> Integer
-part1 x = sum $ map diff (zip (sortedList fst x) (sortedList snd x))
+part1 x = sum $ zipWith diff (sortedList fst x) (sortedList snd x)
 
 sortedList :: ((Integer, Integer) -> Integer) -> [(Integer, Integer)] -> [Integer]
 sortedList fn list = sort $ map fn list
 
-diff :: (Integer, Integer) -> Integer
-diff x = abs $ snd x - fst x
+diff :: Integer -> Integer -> Integer
+diff x y = abs $ x - y
 
 part2 :: [(Integer, Integer)] -> Integer
 part2 x = sum $ map (similarityScore (sortedList snd x)) (sortedList fst x)
 
 similarityScore :: [Integer] -> Integer -> Integer
-similarityScore xs x = x * (genericLength [a | a <- xs, a == x])
-
-
+similarityScore xs x = x * genericLength [a | a <- xs, a == x]
