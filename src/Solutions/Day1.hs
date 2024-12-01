@@ -3,13 +3,9 @@ module Solutions.Day1
 
 import           Common.AoCSolutions (AoCSolution (MkAoCSolution),
                                       printSolutions, printTestSolutions)
-import           Common.Debugging    (traceLns)
-import           Debug.Trace         (traceIO, traceShow)
-import           Control.Applicative.Combinators (some)
-import           Text.Parser.Char    (newline)
 import           Text.Trifecta       (CharParsing (anyChar), Parser,
                                       TokenParsing (token), count, integer,
-                                      some, sepBy, whiteSpace)
+                                      some)
 import           Data.List
 
 aoc1 :: IO ()
@@ -36,6 +32,9 @@ diff :: (Integer, Integer) -> Integer
 diff x = abs (snd x - fst x)
 
 part2 :: [(Integer, Integer)] -> Integer
-part2 = undefined
+part2 x = sum (map (similarityScore (sortedList snd x)) (sortedList fst x))
+
+similarityScore :: [Integer] -> Integer -> Integer
+similarityScore xs x = x * (genericLength [a | a <- xs, a == x])
 
 
