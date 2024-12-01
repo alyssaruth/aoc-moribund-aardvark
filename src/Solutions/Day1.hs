@@ -3,51 +3,39 @@ module Solutions.Day1
 
 import           Common.AoCSolutions (AoCSolution (MkAoCSolution),
                                       printSolutions, printTestSolutions)
-import           Data.Char           (isDigit)
-import           Text.Trifecta       (Parser, TokenParsing (token), alphaNum,
-                                      some)
+import           Common.Debugging    (traceLns)
+import           Debug.Trace         (traceIO, traceShow)
+import           Control.Applicative.Combinators (some)
+import           Text.Parser.Char    (newline)
+import           Text.Trifecta       (CharParsing (anyChar), Parser,
+                                      TokenParsing (token), count, integer,
+                                      some, sepBy, whiteSpace)
+import           Data.List
 
 aoc1 :: IO ()
 aoc1 = do
   printSolutions 1 $ MkAoCSolution parseInput part1
   printSolutions 1 $ MkAoCSolution parseInput part2
 
-type CalibrationLines = [String]
 
-parseInput :: Parser CalibrationLines
+parseInput :: Parser [(Integer, Integer)]
 parseInput = do
-  some $ token $ some alphaNum
+  some $ token parsePair
+  where parsePair :: Parser (Integer, Integer)
+        parsePair = do
+            [a,b] <- count 2 integer
+            pure (a,b)
 
-part1 :: CalibrationLines -> Int
-part1 = sum . map calibrationValue
+part1 :: [(Integer, Integer)] -> Integer
+part1 x = sum (map diff (zip (sortedList fst x) (sortedList snd x)))
 
-part2 :: CalibrationLines -> Int
-part2 = sum . map (calibrationValue . validNumbers)
+sortedList :: ((Integer, Integer) -> Integer) -> [(Integer, Integer)] -> [Integer]
+sortedList fn list = sort (map fn list)
 
-calibrationValue :: String -> Int
-calibrationValue x = read [firstNumber x, lastNumber x]
+diff :: (Integer, Integer) -> Integer
+diff x = abs (snd x - fst x)
 
-firstNumber :: String -> Char
-firstNumber = head . filter isDigit
+part2 :: [(Integer, Integer)] -> Integer
+part2 = undefined
 
-lastNumber :: String -> Char
-lastNumber = firstNumber . reverse
-
-validNumbers :: String -> String
-validNumbers [] = ""
-validNumbers l@(x:xs)
-    | isDigit x = [x] ++ validNumbers xs
-    | otherwise = (parseStringNum l) ++ (validNumbers xs)
-
-parseStringNum :: String -> String
-parseStringNum ('o':'n':'e':things) = ['1']
-parseStringNum ('t':'w':'o':stuff) = ['2']
-parseStringNum ('t':'h':'r':'e':'e':rubbish) = ['3']
-parseStringNum ('f':'o':'u':'r':remainder) = ['4']
-parseStringNum ('f':'i':'v':'e':gubbins) = ['5']
-parseStringNum ('s':'i':'x':doodad) = ['6']
-parseStringNum ('s':'e':'v':'e':'n':mcguffin) = ['7']
-parseStringNum ('e':'i':'g':'h':'t':junk) = ['8']
-parseStringNum ('n':'i':'n':'e':remnants) = ['9']
-parseStringNum x = []
 
