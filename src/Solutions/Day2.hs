@@ -1,67 +1,56 @@
-module Solutions.Day2
-  ( aoc2
-  ) where
+module Solutions.Day2 where
 
-import           Common.AoCSolutions (AoCSolution (MkAoCSolution),
-                                      printSolutions)
-import           Control.Applicative.Combinators (some)
-import qualified Data.Map as Map
-import           Text.Parser.Char    (newline)
-import           Text.Trifecta       (CharParsing (string), Parser,
-                                      commaSep, integer, letter,
-                                      semiSep)
-
-data Colour = Red | Green | Blue
-    deriving (Eq, Show, Bounded, Enum, Ord)
-
-type CubeRound = Map.Map Colour Integer
-
-data CubeGame = CubeGame { gameId :: Integer, rounds :: [CubeRound] }
+import Common.AoCSolutions
+  ( AoCSolution (MkAoCSolution),
+    printSolutions,
+    printTestSolutions,
+  )
+import Common.ListUtils (window2)
+import Data.Ix (inRange)
+import Data.List
+import qualified Data.Set as Set
+import Text.Parser.Char
+import Text.Parser.Token (integer')
+import Text.Trifecta
+  ( Parser,
+    TokenParsing (token),
+    sepBy,
+  )
 
 aoc2 :: IO ()
 aoc2 = do
   printSolutions 2 $ MkAoCSolution parseInput part1
   printSolutions 2 $ MkAoCSolution parseInput part2
 
-parseInput :: Parser [CubeGame]
-parseInput = some $ parseGame <* newline
+parseInput :: Parser [[Integer]]
+parseInput = do
+  xs <- sepBy (sepBy integer' (char ' ')) newline
+  pure $ filter (not . null) xs
 
-parseGame :: Parser CubeGame
-parseGame = do
-  label <- string "Game " *> integer <* string ": "
-  rounds <- fmap (map Map.fromList) $ semiSep $ commaSep parseCubes
-  pure $ CubeGame label rounds
+part1 :: [[Integer]] -> Integer
+part1 = genericLength . filter safeReport
 
-parseCubes :: Parser (Colour, Integer)
-parseCubes = do
-  num <- integer
-  c <- some letter
-  case c of
-    "red"   -> return (Red, num)
-    "green" -> return (Green, num)
-    "blue"  -> return (Blue, num)
-    _       -> fail $ "Invalid colour: " ++ c
+safeReport :: [Integer] -> Bool
+safeReport x = length (Set.fromList signs) == 1 && all isGradual differences
+  where
+    differences = map diff (window2 x)
+    signs = map signum differences
 
-part1 :: [CubeGame] -> Integer
-part1 = sum . map gameId . filter isValidA
+diff :: (Integer, Integer) -> Integer
+diff (x, y) = x - y
 
-part2 :: [CubeGame] -> Integer
-part2 = sum . map power
+isGradual :: Integer -> Bool
+isGradual = inRange (1, 3) . abs
 
-isValidA :: CubeGame -> Bool
-isValidA = all isValidRoundA . rounds
+part2 :: [[Integer]] -> Integer
+part2 = genericLength . filter mostlySafeReport
 
-isValidRoundA :: CubeRound -> Bool
-isValidRoundA r = hasAtMost r Red 12 && hasAtMost r Green 13 && hasAtMost r Blue 14
+mostlySafeReport :: [Integer] -> Bool
+mostlySafeReport x = any safeReport subReports
+  where
+    subReports = x : map (deleteNth x) [0 .. genericLength x - 1]
 
-hasAtMost :: CubeRound -> Colour -> Integer -> Bool
-hasAtMost r c threshold = countColour c r <= threshold
-
-power :: CubeGame -> Integer
-power g = (fewestCubes Red g) * (fewestCubes Blue g) * (fewestCubes Green g)
-
-fewestCubes :: Colour -> CubeGame -> Integer
-fewestCubes c g = maximum ( map (countColour c) (rounds g) )
-
-countColour :: Colour -> CubeRound  -> Integer
-countColour c r = Map.findWithDefault 0 c r
+deleteNth :: [Integer] -> Int -> [Integer]
+deleteNth xs n = a ++ drop 1 b
+  where
+    (a, b) = splitAt n xs
