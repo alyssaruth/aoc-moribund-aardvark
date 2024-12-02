@@ -33,11 +33,8 @@ part1 = genericLength . filter safeReport
 safeReport :: [Integer] -> Bool
 safeReport x = length (Set.fromList signs) == 1 && all isGradual differences
   where
-    differences = map diff (window2 x)
+    differences = map (uncurry (-)) (window2 x)
     signs = map signum differences
-
-diff :: (Integer, Integer) -> Integer
-diff (x, y) = x - y
 
 isGradual :: Integer -> Bool
 isGradual = inRange (1, 3) . abs
