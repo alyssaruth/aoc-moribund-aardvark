@@ -1,10 +1,15 @@
 module Solutions.Day3
-  ( aoc3
-  ) where
+  ( aoc3,
+  )
+where
 
-import           Common.AoCSolutions (AoCSolution (MkAoCSolution),
-                                      printSolutions)
-import           Text.Trifecta       (Parser)
+import Common.AoCSolutions
+  ( AoCSolution (MkAoCSolution),
+    printSolutions,
+  )
+import Text.Parser.Combinators
+import Text.Regex.TDFA ((=~))
+import Text.Trifecta (CharParsing (anyChar), Parser)
 
 aoc3 :: IO ()
 aoc3 = do
@@ -12,10 +17,15 @@ aoc3 = do
   printSolutions 3 $ MkAoCSolution parseInput part2
 
 parseInput :: Parser String
-parseInput = undefined
+parseInput = many anyChar
 
-part1 :: String -> String
-part1 = undefined
+multiplicationRegex = "mul\\(([0-9]+),([0-9]+)\\)"
 
-part2 :: String -> String
-part2 = undefined
+part1 :: String -> Integer
+part1 x = sum $ map computeMultResult (x =~ multiplicationRegex :: [[String]])
+
+computeMultResult :: [String] -> Integer
+computeMultResult x = product $ map read (tail x)
+
+part2 :: String -> Integer
+part2 x = undefined
