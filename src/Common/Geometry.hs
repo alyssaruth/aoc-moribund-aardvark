@@ -13,7 +13,7 @@ import Linear (unit)
 
 type Point = V2 Int
 
-type Grid a = M.Map Point a
+type Grid = M.Map Point Char
 
 enumerateMultilineString :: String -> [((Int, Int), Char)]
 enumerateMultilineString str
@@ -30,8 +30,11 @@ enumerateMultilineStringToVectorMap :: String -> M.Map (V2 Int) Char
 enumerateMultilineStringToVectorMap =
   M.fromList . map (\((x, y), c) -> (V2 x y, c)) . enumerateMultilineString
 
-gridNeighbours :: Grid a -> Point -> M.Map Point a
+gridNeighbours :: Grid -> Point -> Grid
 gridNeighbours grid point = M.restrictKeys grid $ neighbours point
+
+gridNeighboursInclusive :: Grid -> Point -> Grid
+gridNeighboursInclusive grid point = M.restrictKeys grid $ S.fromList $ point : neighboursL point
 
 neighboursL :: Point -> [Point]
 neighboursL point = map (+ point) directions
@@ -68,7 +71,7 @@ renderVectorSet points =
    in renderVectorMap asMap
 
 renderVectorList :: [Point] -> String
-renderVectorList = renderVectorSet . S.fromList 
+renderVectorList = renderVectorSet . S.fromList
 
 allOrthogonalDirections :: [V2 Int]
 allOrthogonalDirections = [unit _x, -unit _x, unit _y, -unit _y]
@@ -76,5 +79,5 @@ allOrthogonalDirections = [unit _x, -unit _x, unit _y, -unit _y]
 allOrthogonalNeighbours :: V2 Int -> S.Set Point
 allOrthogonalNeighbours v = S.fromList $ map (v +) allOrthogonalDirections
 
-gridOrthogonalNeighbours :: Grid a -> Point -> M.Map Point a
+gridOrthogonalNeighbours :: Grid -> Point -> Grid
 gridOrthogonalNeighbours grid point = M.restrictKeys grid $ allOrthogonalNeighbours point
