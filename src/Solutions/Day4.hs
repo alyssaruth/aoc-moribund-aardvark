@@ -25,7 +25,7 @@ part1 :: Grid Char -> Int
 part1 g = length $ filter (=="XMAS") $ map (toWord g) (wordies g)
 
 toWord :: Grid Char -> Line -> String
-toWord g = map (flip (M.findWithDefault ' ') g)
+toWord = map . flip (M.findWithDefault ' ')
 
 wordies :: Grid Char -> [Line]
 wordies g = concatMap wordsFromPoint $ keys g
