@@ -22,28 +22,16 @@ parseInput :: Parser (Grid Char)
 parseInput = enumerateMultilineStringToVectorMap <$> many anyChar
 
 part1 :: Grid Char -> Int
-part1 g = length $ filter (=="XMAS") $ map (toWord g) (wordies g)
+part1 g = length $ filter (=="XMAS") $ map (toWord g) (allPotentialLines g)
 
 toWord :: Grid Char -> Line -> String
 toWord = map . flip (M.findWithDefault ' ')
 
-wordies :: Grid Char -> [Line]
-wordies g = concatMap wordsFromPoint $ keys g
+allPotentialLines :: Grid Char -> [Line]
+allPotentialLines g = concatMap expandLine $ keys g
 
--- Unnecessary optimisation
--- startingPoints :: Grid Char -> [Point]
--- startingPoints g = keys (M.filter (=='X') g)
-
-wordsFromPoint :: Point -> [Line]
-wordsFromPoint x = expandLines [[x]]
-
-expandLines :: [Line] -> [Line]
-expandLines = concatMap expandLine
-
-expandLine :: Line -> [Line]
-expandLine [x] = expandLines [[x, n] | n <- neighboursL x]
-expandLine [x, y] = expandLines [[x, y, y + (y - x)]]
-expandLine [x, y, z] = [[x, y, z, z + (z - y)]]
+expandLine :: Point -> [Line]
+expandLine x = [[x, n, n + (n-x), n + 2*(n-x)] | n <- neighboursL x]
 
 part2 :: Grid Char -> String
 part2 = undefined
