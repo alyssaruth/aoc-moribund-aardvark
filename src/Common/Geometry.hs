@@ -33,11 +33,14 @@ enumerateMultilineStringToVectorMap =
 gridNeighbours :: Grid a -> Point -> M.Map Point a
 gridNeighbours grid point = M.restrictKeys grid $ neighbours point
 
-neighbours :: Point -> S.Set Point
-neighbours point = S.fromList $ map (+ point) directions
+neighboursL :: Point -> [Point]
+neighboursL point = map (+ point) directions
   where
     directions = [V2 x y | x <- units, y <- units, [x, y] /= [0, 0]]
     units = [-1, 0, 1]
+
+neighbours :: Point -> S.Set Point
+neighbours point = S.fromList $ neighboursL point
 
 renderVectorMap :: M.Map (V2 Int) Char -> String
 renderVectorMap m =

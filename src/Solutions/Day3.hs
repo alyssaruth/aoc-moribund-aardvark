@@ -8,10 +8,8 @@ import Common.AoCSolutions
     printSolutions,
     printTestSolutions,
   )
-import Common.ListUtils (windowN, window2)
-import Data.Foldable (find)
+import Common.ListUtils (window2, windowN)
 import Data.List (elemIndices, sort)
-import Data.Maybe (fromJust)
 import Text.Parser.Combinators (many)
 import Text.Regex.TDFA ((=~))
 import Text.Trifecta (CharParsing (anyChar), Parser)
@@ -40,13 +38,10 @@ part2 x = sum $ map (sumMultiplications . slice x) validSegments
   where
     dos = 0 : findSubstrIndices x "do()"
     dosAndDonts = sort $ dos ++ findSubstrIndices x "don't()" ++ [length x]
-    validSegments = filter (validInterval dos) (window2 dosAndDonts)
+    validSegments = filter (flip elem dos . fst) (window2 dosAndDonts)
 
 slice :: [a] -> (Int, Int) -> [a]
 slice xs (i, k) = [xs !! n | n <- [0 .. length xs - 1], n >= i, n < k]
 
 findSubstrIndices :: String -> String -> [Int]
 findSubstrIndices s target = elemIndices target (windowN (length target) s)
-
-validInterval :: [Int] -> (Int, Int) -> Bool
-validInterval dos (start, end) = start `elem` dos
