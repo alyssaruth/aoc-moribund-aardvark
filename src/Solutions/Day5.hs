@@ -48,10 +48,10 @@ part1 (rules, pages) = sum $ map middleElement $ filter (`elem` pages) sortedPag
 ruleSort :: [PageRule] -> Integer -> Integer -> Ordering
 ruleSort rules x y = compare (tupleIndex x relevantRule) (tupleIndex y relevantRule)
   where
-    relevantRule = fromMaybe (-1, -1) $ find (ruleContains x y) rules
+    relevantRule = fromMaybe (-1, -1) $ find (containsBoth x y) rules
 
-ruleContains :: Integer -> Integer -> PageRule -> Bool
-ruleContains x y rule = rule == (x, y) || rule == (y, x)
+containsBoth :: Integer -> Integer -> PageRule -> Bool
+containsBoth x y rule = rule == (x, y) || rule == (y, x)
 
 tupleIndex :: Integer -> (Integer, Integer) -> Maybe Int
 tupleIndex x (a, b) = elemIndex x [a, b]
