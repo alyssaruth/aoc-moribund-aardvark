@@ -12,6 +12,7 @@ import Common.Geometry
 import Control.Lens ((^.))
 import Data.List
 import qualified Data.Map as M
+import Data.Set as S
 import Linear.V2 (R1 (_x), R2 (_y), V2 (..))
 import Text.Trifecta (Parser, anyChar, many)
 
@@ -20,7 +21,9 @@ type Direction = Point
 type Position = Point
 
 data Guard = Guard {position :: Position, direction :: Direction}
-  deriving (Show)
+  deriving (Show, Eq, Ord)
+
+data PatrolResult = PatrolResult {history :: Set Guard, looped :: Bool}
 
 aoc6 :: IO ()
 aoc6 = do
@@ -30,11 +33,14 @@ aoc6 = do
 parseInput :: Parser Grid
 parseInput = enumerateMultilineStringToVectorMap <$> many anyChar
 
-makeAllMoves :: Grid -> [Guard] -> [Guard]
-makeAllMoves g guards = if newTile == ' ' then guards else makeAllMoves g (guards ++ [newGuard])
+makeAllMoves :: Grid -> Set Guard -> Guard -> PatrolResult
+makeAllMoves g guards guard
+  | newTile == ' ' = PatrolResult guards False
+  | newGuard `member` guards = PatrolResult guards True
+  | otherwise = makeAllMoves g (S.insert newGuard guards) newGuard
   where
-    newGuard = makeMove g (last guards)
-    newTile = M.findWithDefault ' ' (position newGuard) g
+      newGuard = makeMove g guard
+      newTile = M.findWithDefault ' ' (position newGuard) g
 
 makeMove :: Grid -> Guard -> Guard
 makeMove grid guard = if obstacle == '#' then Guard (position guard) (rotate $ direction guard) else Guard newPosition (direction guard)
@@ -48,10 +54,23 @@ rotate d = V2 (-(d ^. _y)) (d ^. _x)
 findGuard :: Grid -> Position
 findGuard g = head $ M.keys $ M.filter (== '^') g
 
-part1 :: Grid -> Int
-part1 g = length $ nub $ map position $ makeAllMoves g [initialGuard]
+processGrid :: Grid -> PatrolResult
+processGrid g = makeAllMoves g (S.singleton initialGuard) initialGuard
   where
     initialGuard = Guard (findGuard g) (V2 0 (-1))
 
-part2 :: Grid -> String
-part2 = undefined
+part1 :: Grid -> Int
+part1 g = length $ S.map position $ history $ processGrid g
+
+generateNewGrids :: Grid -> [Grid]
+generateNewGrids g = Data.List.map (addObstacle g) positions
+   where positions = Data.List.delete (findGuard g) $ S.toList $ S.map position $ history $ processGrid g
+
+addObstacle :: Grid -> Position -> Grid
+addObstacle g p = M.insert p '#' g
+
+createsLoop :: Grid -> Bool
+createsLoop = looped . processGrid
+
+part2 :: Grid -> Int
+part2 g = length $ Data.List.filter createsLoop $ generateNewGrids g
