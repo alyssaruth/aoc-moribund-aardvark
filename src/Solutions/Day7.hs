@@ -4,7 +4,6 @@ import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
   )
-import Data.Maybe (mapMaybe)
 import Text.Trifecta (CharParsing (char, string), Parser, TokenParsing (token), integer, integer', sepBy, some)
 
 data Equation = Equation {solution :: Integer, coefficients :: [Integer]}
@@ -28,10 +27,10 @@ parseEquation = do
   pure $ Equation result coefficients
 
 part1 :: [Equation] -> Integer
-part1 = sum . mapMaybe (solveEquation [(+), (*)])
+part1 = sum . map solution . filter (canSolveEquation [(+), (*)])
 
-solveEquation :: [Operation] -> Equation -> Maybe Integer
-solveEquation ops e = if solution e `elem` results then Just $ solution e else Nothing
+canSolveEquation :: [Operation] -> Equation -> Bool
+canSolveEquation ops e = solution e `elem` results
   where
     results = generateResults ops $ coefficients e
 
@@ -46,4 +45,4 @@ concatenate :: Integer -> Integer -> Integer
 concatenate x y = read $ show x ++ show y
 
 part2 :: [Equation] -> Integer
-part2 = sum . mapMaybe (solveEquation [(+), (*), concatenate])
+part2 = sum . map solution . filter (canSolveEquation [(+), (*), concatenate])
