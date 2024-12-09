@@ -1,21 +1,49 @@
-module Solutions.Day7
-  ( aoc7
-  ) where
+module Solutions.Day7 where
 
-import           Common.AoCSolutions (AoCSolution (MkAoCSolution),
-                                      printSolutions)
-import           Text.Trifecta       (Parser)
+import Common.AoCSolutions
+  ( AoCSolution (MkAoCSolution),
+    printSolutions,
+  )
+import Data.Maybe (mapMaybe)
+import Text.Trifecta (CharParsing (char, string), Parser, TokenParsing (token), integer, integer', sepBy, some)
+
+data Equation = Equation {solution :: Integer, coefficients :: [Integer]}
+  deriving (Show, Eq, Ord)
+
+type Operation = Integer -> Integer -> Integer
 
 aoc7 :: IO ()
 aoc7 = do
   printSolutions 7 $ MkAoCSolution parseInput part1
   printSolutions 7 $ MkAoCSolution parseInput part2
 
-parseInput :: Parser String
-parseInput = undefined
+parseInput :: Parser [Equation]
+parseInput = do
+  some $ token parseEquation
 
-part1 :: String -> String
-part1 = undefined
+parseEquation :: Parser Equation
+parseEquation = do
+  result <- integer <* string ": "
+  coefficients <- sepBy integer' (char ' ')
+  pure $ Equation result coefficients
 
-part2 :: String -> String
-part2 = undefined
+part1 :: [Equation] -> Integer
+part1 = sum . mapMaybe (solveEquation [(+), (*)])
+
+solveEquation :: [Operation] -> Equation -> Maybe Integer
+solveEquation ops e = if solution e `elem` results then Just $ solution e else Nothing
+  where
+    results = generateResults ops $ coefficients e
+
+generateResults :: [Operation] -> [Integer] -> [Integer]
+generateResults _ [x] = [x]
+generateResults ops x = concatMap (generateResults ops . applyOperation x) ops
+
+applyOperation :: [Integer] -> Operation -> [Integer]
+applyOperation x op = op (head x) (head $ tail x) : tail (tail x)
+
+concatenate :: Integer -> Integer -> Integer
+concatenate x y = read $ show x ++ show y
+
+part2 :: [Equation] -> Integer
+part2 = sum . mapMaybe (solveEquation [(+), (*), concatenate])
