@@ -1,4 +1,4 @@
-module Solutions.Day7 where
+module Solutions.Day7 (aoc7) where
 
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
@@ -40,7 +40,7 @@ generateResults _ [x] = [x]
 generateResults ops x = concatMap (generateResults ops . applyOperation x) ops
 
 applyOperation :: [Integer] -> Operation -> [Integer]
-applyOperation x op = op (head x) (head $ tail x) : tail (tail x)
+applyOperation (a : b : xs) op = op a b : xs
 
 concatenate :: Integer -> Integer -> Integer
 concatenate x y = read $ show x ++ show y
