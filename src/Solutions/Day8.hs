@@ -31,7 +31,10 @@ parseInput :: Parser Grid
 parseInput = enumerateMultilineStringToVectorMap <$> many anyChar
 
 part1 :: Grid -> Int
-part1 g = length $ filter (hasAntiNode isAntiNode (groupedNodes g)) $ M.keys g
+part1 = length . findAntiNodes isAntiNode
+
+findAntiNodes :: AntiNodeChecker -> Grid -> [Point]
+findAntiNodes checker g = filter (hasAntiNode checker (groupedNodes g)) $ M.keys g
 
 groupedNodes :: Grid -> M.Map Char [Point]
 groupedNodes g = groupNodes $ [Node frequency pt | (pt, frequency) <- M.toList $ M.filter (/= '.') g]
@@ -51,7 +54,7 @@ hasAntiNodePartner :: [Point] -> Point -> Bool
 hasAntiNodePartner nodes pt = 2 * pt `elem` nodes
 
 part2 :: Grid -> Int
-part2 g = length $ filter (hasAntiNode isAntiNodeB (groupedNodes g)) $ M.keys g
+part2 = length . findAntiNodes isAntiNodeB
 
 isAntiNodeB :: Point -> [Point] -> Bool
 isAntiNodeB p nodes = length normalDistances < length distances || p `elem` nodes
