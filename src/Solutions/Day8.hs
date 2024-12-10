@@ -6,63 +6,57 @@ where
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
-    printTestSolutions,
   )
 import Common.Geometry
   ( Grid,
     Point,
     enumerateMultilineStringToVectorMap,
-    gridNeighbours,
   )
 import Data.List
 import qualified Data.Map as M
+import Linear (V2 (..))
 import Text.Trifecta (CharParsing (anyChar), Parser, many)
-import Linear (V2(..))
 
 data Node = Node {frequency :: Char, location :: Point}
   deriving (Show, Eq, Ord)
 
+type AntiNodeChecker = Point -> [Point] -> Bool
+
 aoc8 :: IO ()
 aoc8 = do
-  printTestSolutions 8 $ MkAoCSolution parseInput part1
+  printSolutions 8 $ MkAoCSolution parseInput part1
   printSolutions 8 $ MkAoCSolution parseInput part2
 
 parseInput :: Parser Grid
 parseInput = enumerateMultilineStringToVectorMap <$> many anyChar
 
 part1 :: Grid -> Int
-part1 g = length $ filter (hasAntiNode (allNodes g)) $ M.keys g
+part1 g = length $ filter (hasAntiNode isAntiNode (groupedNodes g)) $ M.keys g
 
-allNodes :: Grid -> [Node]
-allNodes g = [Node frequency pt | (pt, frequency) <- M.toList $ M.filter (/= '.') g]
+groupedNodes :: Grid -> M.Map Char [Point]
+groupedNodes g = groupNodes $ [Node frequency pt | (pt, frequency) <- M.toList $ M.filter (/= '.') g]
 
 groupNodes :: [Node] -> M.Map Char [Point]
 groupNodes nodes = M.fromListWith (++) [(frequency n, [location n]) | n <- nodes]
 
-hasAntiNode :: [Node] -> Point -> Bool
-hasAntiNode nodes pt = any (isAntiNode pt) $ groupNodes nodes
+hasAntiNode :: AntiNodeChecker -> M.Map Char [Point] -> Point -> Bool
+hasAntiNode checker nodes pt = any (checker pt) nodes
 
 isAntiNode :: Point -> [Point] -> Bool
 isAntiNode p nodes = any (hasAntiNodePartner distances) distances
   where
-    distances = filter (/= V2 0 0) $ map (distance p) nodes
-
-distance :: Point -> Point -> Point
-distance p q = p - q
+    distances = filter (/= V2 0 0) $ map (p -) nodes
 
 hasAntiNodePartner :: [Point] -> Point -> Bool
 hasAntiNodePartner nodes pt = 2 * pt `elem` nodes
 
 part2 :: Grid -> Int
-part2 g = length $ filter (hasAntiNodeB (allNodes g)) $ M.keys g
-
-hasAntiNodeB :: [Node] -> Point -> Bool
-hasAntiNodeB nodes pt = any (isAntiNodeB pt) $ groupNodes nodes
+part2 g = length $ filter (hasAntiNode isAntiNodeB (groupedNodes g)) $ M.keys g
 
 isAntiNodeB :: Point -> [Point] -> Bool
 isAntiNodeB p nodes = length normalDistances < length distances || p `elem` nodes
   where
-    distances = filter (/= V2 0 0) $ map (distance p) nodes
+    distances = filter (/= V2 0 0) $ map (p -) nodes
     normalDistances = nub $ map normalize distances
 
 normalize :: Point -> Point
