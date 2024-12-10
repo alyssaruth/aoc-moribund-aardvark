@@ -20,7 +20,7 @@ data Node = Node {frequency :: Char, location :: Point}
 
 aoc8 :: IO ()
 aoc8 = do
-  printTestSolutions 8 $ MkAoCSolution parseInput part1
+  printSolutions 8 $ MkAoCSolution parseInput part1
   printSolutions 8 $ MkAoCSolution parseInput part2
 
 parseInput :: Parser Grid
@@ -59,7 +59,7 @@ hasAntiNode nodes pt = any (isAntiNode pt) $ groupNodes nodes
 
 isAntiNode :: Point -> [Point] -> Bool
 isAntiNode p nodes = any (hasAntiNodePartner distances) distances
-  where distances = map (distance p) nodes
+  where distances = filter (/= V2 0 0) $ map (distance p) nodes
 
 distance :: Point -> Point -> Point
 distance p q = p - q
