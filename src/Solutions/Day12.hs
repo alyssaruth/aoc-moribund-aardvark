@@ -20,7 +20,7 @@ data Region = Region {plant :: Char, points :: S.Set Point}
 
 aoc12 :: IO ()
 aoc12 = do
-  printTestSolutions 12 $ MkAoCSolution parseInput part1
+  printSolutions 12 $ MkAoCSolution parseInput part1
   printSolutions 12 $ MkAoCSolution parseInput part2
 
 parseInput :: Parser Grid
@@ -43,7 +43,7 @@ expandRegion grid (Region plant points) newPoints
   | S.null newNeighbours = Region plant points
   | otherwise = expandRegion grid newRegion newNeighbours
   where
-    neighbours = S.fromList $ concatMap (M.keys . M.filter (== plant) . gridNeighbours grid) $ S.toList newPoints
+    neighbours = S.fromList $ concatMap (M.keys . M.filter (== plant) . gridOrthogonalNeighbours grid) $ S.toList newPoints
     newNeighbours = S.difference neighbours points
     newRegion = Region plant $ S.union neighbours points
 
@@ -56,7 +56,6 @@ perimeter regionPts = sum perimeters
     allNeighbours = map allOrthogonalNeighbours $ S.toList regionPts
     perimeters = map (length . flip S.difference regionPts) allNeighbours
 
---1466842 is too high.
 part1 :: Grid -> Int
 part1 = sum . map price . regions
 
