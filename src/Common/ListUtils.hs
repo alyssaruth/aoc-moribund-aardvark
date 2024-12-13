@@ -16,6 +16,9 @@ mostCommon = snd . maximum . map (\xs -> (length xs, head xs)) . group . sort
 leastCommon :: Ord a => [a] -> a
 leastCommon = snd . minimum . map (\xs -> (length xs, head xs)) . group . sort
 
+mapIf :: (b -> Bool) -> (b -> b) -> [b] -> [b]
+mapIf p f = map (\x -> if p x then f x else x)
+
 window2 :: [a] -> [(a, a)]
 window2 l@(_:xs) = zip l xs
 window2 _        = []
