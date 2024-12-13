@@ -12,8 +12,7 @@ import Data.Char (digitToInt)
 import Data.List (find)
 import Data.List.Split
 import Data.Maybe
-import Data.Sequence as S (Seq, deleteAt, drop, dropWhileL, elemIndexL, elemIndexR, findIndexR, findIndicesL, fromList, index, length, mapWithIndex, replicate, reverse, take, update, (><))
-import Debug.Trace (traceShow)
+import Data.Sequence as S (Seq, drop, dropWhileL, elemIndexL, findIndicesL, fromList, index, length, mapWithIndex, replicate, reverse, take, update, (><))
 import Text.Trifecta (CharParsing (anyChar), Parser, many)
 
 data File = File {fileId :: Int, size :: Int}
