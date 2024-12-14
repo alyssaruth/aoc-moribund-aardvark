@@ -5,13 +5,14 @@ where
 
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
-    printSolutions, printTestSolutions,
+    printSolutions,
+    printTestSolutions,
   )
 import Common.Geometry
-import Text.Trifecta (CharParsing (anyChar), Parser, many)
-import qualified Data.Map as M
 import Data.Char (digitToInt, intToDigit)
-import Data.List (singleton, nub)
+import Data.List (nub, singleton)
+import qualified Data.Map as M
+import Text.Trifecta (CharParsing (anyChar), Parser, many)
 
 type Path = [Point]
 
@@ -24,15 +25,15 @@ parseInput :: Parser Grid
 parseInput = enumerateMultilineStringToVectorMap <$> many anyChar
 
 trailheads :: Grid -> [Point]
-trailheads = M.keys . M.filter (=='0')
+trailheads = M.keys . M.filter (== '0')
 
 findAllPaths :: Grid -> Point -> [Path]
 findAllPaths g p = findAllPathsR g [[p]]
 
 findAllPathsR :: Grid -> [Path] -> [Path]
-findAllPathsR g paths 
+findAllPathsR g paths
   | length (last paths) == 10 = paths
-  | otherwise = findAllPathsR g $ concatMap (iteratePath g) paths 
+  | otherwise = findAllPathsR g $ concatMap (iteratePath g) paths
 
 iteratePath :: Grid -> Path -> [Path]
 iteratePath g p = map (p ++) validNeighbours
@@ -46,7 +47,6 @@ scoreTrailhead g p = length $ nub $ map last $ findAllPaths g p
 
 rateTrailhead :: Grid -> Point -> Int
 rateTrailhead g p = length $ nub $ findAllPaths g p
-
 
 part1 :: Grid -> Int
 part1 g = sum $ map (scoreTrailhead g) $ trailheads g
