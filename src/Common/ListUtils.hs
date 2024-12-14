@@ -49,3 +49,7 @@ dropUntil _ [] = []
 dropUntil pred l@(x:xs)
   | pred x = l
   | otherwise = dropUntil pred xs
+
+
+associateBy :: Ord b => (a -> b) -> [a] -> M.Map b [a]
+associateBy fn list = M.fromListWith (++) [(fn item, [item]) | item <- list]
