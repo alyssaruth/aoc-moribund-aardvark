@@ -5,20 +5,20 @@ where
 
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
-    printSolutions, printTestSolutions,
+    printSolutions,
+    printTestSolutions,
   )
 import Common.Geometry
-import qualified Data.Map as M
-import Data.Set as S (Set, difference, fromList, null, toList, union, member, singleton, elemAt)
-import Text.Trifecta (CharParsing (anyChar), Parser, many)
-import Data.List (find, map, nub, sort)
-import Control.Lens (none, (^.))
-import Data.Maybe (isNothing, fromJust)
-import           Linear.V2       (R1 (_x), R2 (_y), V2 (..))
 import Common.ListUtils (associateBy, window2)
+import Data.List (map, sort)
+import qualified Data.Map as M
+import Data.Set as S (Set, difference, elemAt, fromList, null, singleton, toList, union, empty)
+import Linear.V2 (R1 (_x), R2 (_y), V2 (..))
+import Text.Trifecta (CharParsing (anyChar), Parser, many)
 
-data Region = Region {plant :: Char, points :: S.Set Point}
-  deriving (Show)
+type Region = S.Set Point
+
+type Line = [Point]
 
 aoc12 :: IO ()
 aoc12 = do
@@ -29,39 +29,36 @@ parseInput :: Parser Grid
 parseInput = enumerateMultilineStringToVectorMap <$> many anyChar
 
 regions :: Grid -> [Region]
-regions g = findAllRegions g [] (S.fromList $ M.keys g)
+regions g = findAllRegions g [] (M.keysSet g)
 
 findAllRegions :: Grid -> [Region] -> Set Point -> [Region]
 findAllRegions g regions ptsRemaining
   | S.null ptsRemaining = regions
-  | otherwise = findAllRegions g (regions ++ [newRegion]) (ptsRemaining `S.difference` points newRegion)
+  | otherwise = findAllRegions g (regions ++ [newRegion]) (ptsRemaining `S.difference` newRegion)
   where
     newPoint = S.elemAt 0 ptsRemaining
     newPlant = M.findWithDefault ' ' newPoint g
-    newRegion = expandRegion g (Region newPlant $ S.singleton newPoint) (S.singleton newPoint)
+    newRegion = expandRegion g newPlant (S.singleton newPoint) (S.singleton newPoint)
 
-expandRegion :: Grid -> Region -> S.Set Point -> Region
-expandRegion grid (Region plant points) newPoints
-  | S.null newNeighbours = Region plant points
-  | otherwise = expandRegion grid newRegion newNeighbours
+expandRegion :: Grid -> Char -> Region -> Region -> Region
+expandRegion grid plant points newPoints
+  | S.null newNeighbours = points
+  | otherwise = expandRegion grid plant newRegion newNeighbours
   where
     neighbours = S.fromList $ concatMap (M.keys . M.filter (== plant) . gridOrthogonalNeighbours grid) $ S.toList newPoints
     newNeighbours = S.difference neighbours points
-    newRegion = Region plant $ S.union neighbours points
+    newRegion = S.union neighbours points
 
-price :: Region -> Int
-price (Region _ points) = length points * perimeter points
-
-perimeter :: Set Point -> Int
+perimeter :: Region -> Int
 perimeter regionPts = sum perimeters
   where
     allNeighbours = map allOrthogonalNeighbours $ S.toList regionPts
     perimeters = map (length . flip S.difference regionPts) allNeighbours
 
-countSides :: Set Point -> Int
+countSides :: Region -> Int
 countSides pts = sum $ map (countSidesForDirection pts) allOrthogonalDirections
 
-countSidesForDirection :: Set Point -> Point -> Int
+countSidesForDirection :: Region -> Point -> Int
 countSidesForDirection pts (V2 x y) = sum $ M.map (distinctSides orthDirection) $ associateBy direction outliers
   where
     neighbours = S.fromList $ map (+ V2 x y) $ S.toList pts
@@ -69,10 +66,10 @@ countSidesForDirection pts (V2 x y) = sum $ M.map (distinctSides orthDirection) 
     direction = if x == 0 then getY else getX
     orthDirection = if x == 0 then getX else getY
 
-distinctSides :: (Point -> Int) -> [Point] -> Int
-distinctSides fn pts = 1 + diffs
+distinctSides :: (Point -> Int) -> Line -> Int
+distinctSides fn line = 1 + gaps
   where
-    diffs = length $ filter (>1) $ map diff $ window2 $ sort $ map fn pts
+    gaps = length $ filter (> 1) $ map diff $ window2 $ sort $ map fn line
 
 getX :: Point -> Int
 getX (V2 x y) = x
@@ -83,11 +80,8 @@ getY (V2 x y) = y
 diff :: (Int, Int) -> Int
 diff (a, b) = b - a
 
-priceB :: Region -> Int
-priceB (Region _ points) = length points * countSides points
-
 part1 :: Grid -> Int
-part1 = sum . map price . regions
+part1 = sum . map (\x -> length x * perimeter x) . regions
 
 part2 :: Grid -> Int
-part2 = sum . map priceB . regions
+part2 = sum . map (\x -> length x * countSides x) . regions
