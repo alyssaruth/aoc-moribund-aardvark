@@ -16,6 +16,9 @@ traceLns string expr =
 traceVectorMap :: M.Map Point Char -> a -> a
 traceVectorMap vm = traceLns (renderVectorMap vm)
 
+traceVectorMapI :: M.Map Point Char -> M.Map Point Char
+traceVectorMapI vm = traceVectorMap vm vm
+
 traceShowIf :: (Show a) => Bool -> a -> b -> b
 traceShowIf pred showable rest =
   if pred
