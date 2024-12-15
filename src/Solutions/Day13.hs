@@ -4,7 +4,7 @@ import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
   )
-import Text.Trifecta (Parser, TokenParsing (token), count, integer, some, CharParsing (string))
+import Text.Trifecta (CharParsing (string), Parser, TokenParsing (token), count, integer, some)
 
 data ClawEquation = ClawEquation {a :: Integer, b :: Integer, total :: Integer}
 
@@ -57,7 +57,7 @@ updatePrize :: SimultaneousEquations -> SimultaneousEquations
 updatePrize (eq1, eq2) = (updateTotal eq1, updateTotal eq2)
 
 updateTotal :: ClawEquation -> ClawEquation
-updateTotal (ClawEquation a b total) = ClawEquation a b (10000000000000+total)
+updateTotal (ClawEquation a b total) = ClawEquation a b (10000000000000 + total)
 
 tokenCost :: Maybe Solution -> Integer
 tokenCost Nothing = 0
