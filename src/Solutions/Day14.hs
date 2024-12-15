@@ -10,17 +10,14 @@ import Common.AoCSolutions
   )
 import Common.Geometry
 import Common.ListUtils
-import Data.Map as M (Map, map)
+import Data.Map as M (Map, map, fromList)
 import Linear (V2 (..))
-import Text.Trifecta (CharParsing (anyChar, string), Parser, TokenParsing (token), integer, many, some)
-import Data.Char (digitToInt, intToDigit)
+import Text.Trifecta (CharParsing (string), Parser, TokenParsing (token), integer, some)
 import Common.Debugging
 
 type Position = Point
 
 type Velocity = Point
-
-data Dimensions = Dimensions {width :: Int, height :: Int}
 
 data Robot = Robot {position :: Position, velocity :: Velocity}
   deriving (Show)
@@ -45,56 +42,53 @@ parseRobot = do
   v_y <- string "," *> integer
   pure $ Robot (V2 (fromInteger x) (fromInteger y)) (V2 (fromInteger v_x) (fromInteger v_y))
 
+
+width = 101
+height = 103
+xMid = width `div` 2
+yMid = height `div` 2
+
 part1 :: [Robot] -> Int
-part1 = product . M.map length . associateBy (getQuadrant dimensions) . filter (hasQuadrant dimensions) . Prelude.map position . moveNTimes 100 dimensions
-  where
-    dimensions = Dimensions 101 103
+part1 = product . M.map length . associateBy getQuadrant . filter hasQuadrant . Prelude.map position . moveNTimes 100
 
 part2 :: [Robot] -> Int
-part2 = findPicture 0 dimensions
-  where
-    dimensions = Dimensions 101 103
+part2 = findPicture 0
 
 makeMap :: [Robot] -> Grid
-makeMap robots = M.map (intToDigit . length) $ associateBy id $ Prelude.map position robots
+makeMap robots = M.fromList $ [(position, '*') | (Robot position _) <- robots]
 
-moveNTimes :: Int -> Dimensions -> [Robot] -> [Robot]
-moveNTimes 0 dimensions robots = robots
-moveNTimes n dimensions robots = moveNTimes (n - 1) dimensions newRobots
+moveNTimes :: Int -> [Robot] -> [Robot]
+moveNTimes 0 robots = robots
+moveNTimes n robots = moveNTimes (n - 1) newRobots
   where
-    newRobots = moveRobots dimensions robots
-    picturePotential = scorePicturePotential newRobots
+    newRobots = moveRobots robots
 
-findPicture :: Int -> Dimensions -> [Robot] -> Int
-findPicture n dimensions robots = if picturePotential > 1 then traceVectorMap (makeMap newRobots) n+1 else findPicture (n+1) dimensions newRobots
+findPicture :: Int -> [Robot] -> Int
+findPicture n robots = if picturePotential then traceVectorMap (makeMap newRobots) n+1 else findPicture (n+1) newRobots
   where
-    newRobots = moveRobots dimensions robots
-    picturePotential = scorePicturePotential newRobots
+    newRobots = moveRobots robots
+    picturePotential = averageNeighbours newRobots > 1
 
+moveRobots :: [Robot] -> [Robot]
+moveRobots = Prelude.map moveRobot
 
-moveRobots :: Dimensions -> [Robot] -> [Robot]
-moveRobots dimensions = Prelude.map (moveRobot dimensions)
-
-scorePicturePotential :: [Robot] -> Int
-scorePicturePotential robots = sum neighbours `div` length neighbours
+averageNeighbours :: [Robot] -> Int
+averageNeighbours robots = sum neighbours `div` length neighbours
   where 
     positions = Prelude.map position robots
     robotMap = makeMap robots
     neighbours = Prelude.map (length . gridNeighbours robotMap) positions
 
-moveRobot :: Dimensions -> Robot -> Robot
-moveRobot dimensions (Robot position velocity) = Robot (wrapAround dimensions $ position + velocity) velocity
+moveRobot ::  Robot -> Robot
+moveRobot (Robot position velocity) = Robot (wrapAround $ position + velocity) velocity
 
-wrapAround :: Dimensions -> Position -> Position
-wrapAround (Dimensions width height) (V2 x y) = V2 (x `mod` width) (y `mod` height)
+wrapAround :: Position -> Position
+wrapAround (V2 x y) = V2 (x `mod` width) (y `mod` height)
 
-hasQuadrant :: Dimensions -> Position -> Bool
-hasQuadrant (Dimensions width height) (V2 x y) = x /= width `div` 2 && y /= height `div` 2
+hasQuadrant :: Position -> Bool
+hasQuadrant (V2 x y) = x /= xMid && y /= yMid
 
-getQuadrant :: Dimensions -> Position -> Quadrant
-getQuadrant (Dimensions width height) (V2 x y)
+getQuadrant :: Position -> Quadrant
+getQuadrant (V2 x y)
   | x < xMid = if y < yMid then TL else BL
   | otherwise = if y < yMid then TR else BR
-  where
-    xMid = width `div` 2
-    yMid = height `div` 2
