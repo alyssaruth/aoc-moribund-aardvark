@@ -63,7 +63,7 @@ renderVectorMap m =
       , x <- [xMin .. xMax]
       ]
     panelRows = chunksOf xRange panelList
-    rendered = unlines (replicate xRange '=' : panelRows)
+    rendered = unlines (panelRows)
 
 renderVectorSet :: S.Set Point -> String
 renderVectorSet points =
