@@ -45,6 +45,9 @@ neighboursL point = map (+ point) directions
 neighbours :: Point -> S.Set Point
 neighbours point = S.fromList $ neighboursL point
 
+locate :: Char -> Grid -> Point
+locate c = head . M.keys . M.filter (==c)
+
 renderVectorMap :: M.Map (V2 Int) Char -> String
 renderVectorMap m =
   if null m
@@ -63,7 +66,7 @@ renderVectorMap m =
       , x <- [xMin .. xMax]
       ]
     panelRows = chunksOf xRange panelList
-    rendered = unlines (panelRows)
+    rendered = unlines panelRows
 
 renderVectorSet :: S.Set Point -> String
 renderVectorSet points =

@@ -38,10 +38,7 @@ parseMove m
   | m == '<' = V2 (-1) 0
 
 factoryWarehouse :: Grid -> Warehouse
-factoryWarehouse g = Warehouse (findRobot g) (findBoxes g) (M.keysSet $ M.filter (== '#') g)
-
-findRobot :: Grid -> Point
-findRobot = head . M.keys . M.filter (== '@')
+factoryWarehouse g = Warehouse (locate '@' g) (findBoxes g) (M.keysSet $ M.filter (== '#') g)
 
 findBoxes :: Grid -> Set Box
 findBoxes = S.map S.singleton . M.keysSet . M.filter (== 'O')
@@ -87,7 +84,7 @@ part1 :: (Grid, [Point]) -> Int
 part1 (g, moves) = scoreWarehouse $ foldl makeMove (factoryWarehouse g) moves
 
 factorySecondWarehouse :: Grid -> Warehouse
-factorySecondWarehouse g = Warehouse (findRobot widerMap) (findLongBoxes widerMap) (M.keysSet $ M.filter (== '#') widerMap)
+factorySecondWarehouse g = Warehouse (locate '@' widerMap) (findLongBoxes widerMap) (M.keysSet $ M.filter (== '#') widerMap)
   where
     widerMap = doubleUp g
 
