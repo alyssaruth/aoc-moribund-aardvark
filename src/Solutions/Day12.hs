@@ -15,6 +15,7 @@ import qualified Data.Map as M
 import Data.Set as S (Set, difference, elemAt, fromList, null, singleton, toList, union, empty)
 import Linear.V2 (R1 (_x), R2 (_y), V2 (..))
 import Text.Trifecta (CharParsing (anyChar), Parser, many)
+import Control.Lens ((^.))
 
 type Region = S.Set Point
 
@@ -63,22 +64,13 @@ countSidesForDirection pts (V2 x y) = sum $ M.map (distinctSides orthDirection) 
   where
     neighbours = S.fromList $ map (+ V2 x y) $ S.toList pts
     outliers = S.toList $ neighbours `S.difference` pts
-    direction = if x == 0 then getY else getX
-    orthDirection = if x == 0 then getX else getY
+    direction = if x == 0 then (^. _y) else (^. _x)
+    orthDirection = if x == 0 then (^. _x) else (^. _y)
 
 distinctSides :: (Point -> Int) -> Line -> Int
 distinctSides fn line = 1 + gaps
   where
-    gaps = length $ filter (> 1) $ map diff $ window2 $ sort $ map fn line
-
-getX :: Point -> Int
-getX (V2 x y) = x
-
-getY :: Point -> Int
-getY (V2 x y) = y
-
-diff :: (Int, Int) -> Int
-diff (a, b) = b - a
+    gaps = length $ filter (> 1) $ map (uncurry (flip (-))) $ window2 $ sort $ map fn line
 
 part1 :: Grid -> Int
 part1 = sum . map (\x -> length x * perimeter x) . regions
