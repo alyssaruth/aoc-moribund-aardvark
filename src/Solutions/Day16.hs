@@ -9,10 +9,9 @@ import Common.AoCSolutions
   )
 import Text.Trifecta (Parser, many, CharParsing (anyChar))
 import Common.Geometry
-import Data.Set as S ( Set, (\\), insert, null, toList )
+import Data.Set as S ( Set, (\\), insert, null, toList, unions )
 import qualified Data.Map as M
 import Linear (V2(..))
-import Debug.Trace
 
 data Route = Route{visited :: Set Position, score :: Int, position :: Position, direction :: Direction}
 
@@ -86,5 +85,9 @@ walls = M.keysSet . M.filter (== '#')
 part1 :: Grid -> Int
 part1 g = minimum $ map score $ iterateRoutes M.empty (target g) [startingRoute g]
 
-part2 :: Grid -> String
-part2 = undefined
+part2 :: Grid -> Int
+part2 g = length $ S.unions bestRouteVisits \\ walls g
+  where
+    finishedRoutes = iterateRoutes M.empty (target g) [startingRoute g]
+    bestScore = minimum $ map score finishedRoutes
+    bestRouteVisits = [visited route | route <- finishedRoutes, score route == bestScore]
