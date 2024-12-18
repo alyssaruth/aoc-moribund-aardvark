@@ -13,6 +13,10 @@ import Linear (unit)
 
 type Point = V2 Int
 
+type Direction = Point
+
+type Position = Point
+
 type Grid = M.Map Point Char
 
 enumerateMultilineString :: String -> [((Int, Int), Char)]

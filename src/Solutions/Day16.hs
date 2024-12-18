@@ -14,7 +14,7 @@ import qualified Data.Map as M
 import Linear (V2(..))
 import Debug.Trace
 
-data Route = Route{visited :: Set Point, score :: Int, position :: Point, direction :: Point}
+data Route = Route{visited :: Set Position, score :: Int, position :: Position, direction :: Direction}
 
 aoc16 :: IO ()
 aoc16 = do
@@ -29,13 +29,36 @@ startingRoute g = Route (insert position (walls g)) 0 position (V2 1 0)
   where
     position = locate 'S' g
 
-iterateRoutes :: Point -> [Route] -> [Route]
-iterateRoutes goal routes = if Prelude.null unfinishedRoutes then routes else traceShow debugStr iterateRoutes goal (concatMap (iterateRoute goal) routes)
+iterateRoutes :: M.Map String Int -> Position -> [Route] -> [Route]
+iterateRoutes scoreTable goal routes 
+  | Prelude.null unfinishedRoutes = routes 
+  | otherwise = iterateRoutes newScoreTable goal prunedRoutes
   where
     unfinishedRoutes = [route | route <- routes, position route /= goal]
-    debugStr = "Total [" ++ show (length routes) ++ "], unfinished [" ++ show (length unfinishedRoutes) ++ "]"
+    --debugStr = "Total [" ++ show (length routes) ++ "], unfinished [" ++ show (length unfinishedRoutes) ++ "]"
+    newRoutes = concatMap (iterateRoute goal) routes
+    prunedRoutes = pruneRoutes scoreTable newRoutes
+    newScoreTable = updateScores goal scoreTable prunedRoutes
 
-iterateRoute :: Point -> Route -> [Route]
+updateScores :: Position -> M.Map String Int -> [Route] -> M.Map String Int
+updateScores goal scoreTable routes = M.union (M.fromList scorePairs) scoreTable
+  where 
+    unfinishedRoutes = [route | route <- routes, position route /= goal]
+    scorePairs = map scorePair unfinishedRoutes
+
+pruneRoutes :: M.Map String Int -> [Route] -> [Route]
+pruneRoutes map routes = [route | route <- routes, score route < highscore map route]
+
+highscore :: M.Map String Int -> Route -> Int
+highscore map route = M.findWithDefault 10000000000 (hashKey route) map
+
+scorePair :: Route -> (String, Int)
+scorePair route = (hashKey route, score route)
+
+hashKey :: Route -> String
+hashKey route = show (position route) ++ "_" ++ show (direction route)
+
+iterateRoute :: Position -> Route -> [Route]
 iterateRoute goal route
   | position route == goal = [route]
   | S.null validNeighbours = []
@@ -43,26 +66,25 @@ iterateRoute goal route
   where
     validNeighbours = allOrthogonalNeighbours (position route) \\ visited route
 
-updateRoute :: Route -> Point -> Route
+updateRoute :: Route -> Position -> Route
 updateRoute (Route visited score position direction) newPt = Route (insert newPt visited) (score+penalty) newPt newDirection
   where
     newDirection = newPt - position
     penalty = computePenalty position direction newPt
 
-computePenalty :: Point -> Point -> Point -> Int
+computePenalty :: Position -> Direction -> Position -> Int
 computePenalty position direction newPosition
   | newPosition == position + direction = 1
-  | newPosition == position - direction = 2001
   | otherwise = 1001
 
-target :: Grid -> Point
+target :: Grid -> Position
 target = locate 'E'
 
-walls :: Grid -> Set Point
+walls :: Grid -> Set Position
 walls = M.keysSet . M.filter (== '#')
 
 part1 :: Grid -> Int
-part1 g = minimum $ map score $ iterateRoutes (target g) [startingRoute g]
+part1 g = minimum $ map score $ iterateRoutes M.empty (target g) [startingRoute g]
 
 part2 :: Grid -> String
 part2 = undefined

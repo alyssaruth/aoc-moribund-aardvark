@@ -15,8 +15,6 @@ import Linear (V2 (..))
 import Text.Trifecta (CharParsing (string), Parser, TokenParsing (token), integer, some)
 import Common.Debugging
 
-type Position = Point
-
 type Velocity = Point
 
 data Robot = Robot {position :: Position, velocity :: Velocity}

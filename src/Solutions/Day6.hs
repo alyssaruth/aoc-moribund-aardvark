@@ -16,9 +16,6 @@ import Data.Set as S
 import Linear.V2 (R1 (_x), R2 (_y), V2 (..))
 import Text.Trifecta (Parser, anyChar, many)
 
-type Direction = Point
-
-type Position = Point
 
 data Guard = Guard {position :: Position, direction :: Direction}
   deriving (Show, Eq, Ord)
