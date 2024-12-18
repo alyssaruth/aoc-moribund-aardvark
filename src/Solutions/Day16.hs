@@ -28,34 +28,30 @@ startingRoute g = Route (insert position (walls g)) 0 position (V2 1 0)
   where
     position = locate 'S' g
 
-iterateRoutes :: M.Map String Int -> Position -> [Route] -> [Route]
+iterateRoutes :: M.Map Position Int -> Position -> [Route] -> [Route]
 iterateRoutes scoreTable goal routes 
   | Prelude.null unfinishedRoutes = routes 
   | otherwise = iterateRoutes newScoreTable goal prunedRoutes
   where
     unfinishedRoutes = [route | route <- routes, position route /= goal]
-    --debugStr = "Total [" ++ show (length routes) ++ "], unfinished [" ++ show (length unfinishedRoutes) ++ "]"
     newRoutes = concatMap (iterateRoute goal) routes
     prunedRoutes = pruneRoutes scoreTable newRoutes
     newScoreTable = updateScores goal scoreTable prunedRoutes
 
-updateScores :: Position -> M.Map String Int -> [Route] -> M.Map String Int
+updateScores :: Position -> M.Map Position Int -> [Route] -> M.Map Position Int
 updateScores goal scoreTable routes = M.union (M.fromList scorePairs) scoreTable
   where 
     unfinishedRoutes = [route | route <- routes, position route /= goal]
     scorePairs = map scorePair unfinishedRoutes
 
-pruneRoutes :: M.Map String Int -> [Route] -> [Route]
+pruneRoutes :: M.Map Position Int -> [Route] -> [Route]
 pruneRoutes map routes = [route | route <- routes, score route < highscore map route]
 
-highscore :: M.Map String Int -> Route -> Int
-highscore map route = M.findWithDefault 10000000000 (hashKey route) map
+highscore :: M.Map Position Int -> Route -> Int
+highscore map route = M.findWithDefault 10000000000 (position route) map
 
-scorePair :: Route -> (String, Int)
-scorePair route = (hashKey route, score route)
-
-hashKey :: Route -> String
-hashKey route = show (position route) ++ "_" ++ show (direction route)
+scorePair :: Route -> (Position, Int)
+scorePair route = (position route, score route)
 
 iterateRoute :: Position -> Route -> [Route]
 iterateRoute goal route
