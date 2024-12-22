@@ -8,6 +8,7 @@ import           Text.Trifecta       (Parser, CharParsing (string), integer, com
 import Debug.Trace
 import Data.Bits (xor)
 import Data.List (genericLength, isPrefixOf)
+import Data.List.Split (chunksOf)
 
 data Computer = Computer{a :: Integer, b :: Integer, c :: Integer, program :: [Integer], pointer :: Integer, outputs :: [Integer]}
   deriving (Show)
@@ -108,13 +109,24 @@ runProgram comp = if pointer result >= genericLength (program result) then resul
 part1 :: Computer -> [Integer]
 part1 = outputs . runProgram
 
+part2 :: Computer -> Integer
+part2 comp = findCorrectA $ updateA comp 1
+
+-- Assumption (based on my input) - each loop:
+--   * Outputs a single value based on the last 3 bits of A
+--   * Divides A by 8 (dropping those last 3 bits)
+-- So, start from 1 and increase until we get the correct final digit. 
+-- Multiply by 8 to preserve those bits of A, and increment by 1 until we get the correct final 2 digits. And so on.
 findCorrectA :: Computer -> Integer
 findCorrectA comp
   | outputs result == program result = a comp
-  | otherwise = traceShow (show (a comp) ++ ": " ++ show result) $ findCorrectA $ updateA comp (a comp + 8^10)
-  -- | otherwise = findCorrectA $ updateA comp (a comp + 8)
+  | tailMatches result = traceShow (show (a comp) ++ ": " ++ show result) $ findCorrectA $ updateA comp (a comp * 8)
+  | otherwise = findCorrectA $ updateA comp (a comp + 1)
   where
     result = runProgram comp
 
-part2 :: Computer -> Integer
-part2 comp = findCorrectA $ updateA comp (8^15)
+tailMatches :: Computer -> Bool
+tailMatches comp = outputs comp == programTail
+  where
+    outputLength = length $ outputs comp
+    programTail = drop (length (program comp) - outputLength) (program comp)
