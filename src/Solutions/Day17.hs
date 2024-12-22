@@ -113,7 +113,7 @@ part2 :: Computer -> Integer
 part2 comp = findCorrectA $ updateA comp 1
 
 -- Assumption (based on my input) - each loop:
---   * Outputs a single value based on the last 3 bits of A
+--   * Outputs a single value based on the last 3 bits of A (i.e. A mod 8)
 --   * Divides A by 8 (dropping those last 3 bits)
 -- So, start from 1 and increase until we get the correct final digit. 
 -- Multiply by 8 to preserve those bits of A, and increment by 1 until we get the correct final 2 digits. And so on.
