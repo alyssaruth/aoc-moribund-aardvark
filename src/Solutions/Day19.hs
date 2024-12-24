@@ -29,18 +29,17 @@ parseInput = do
   designs <- some $ token $ manyTill alphaNum (string "\n")
   pure (towels, designs)
 
-countPossibilities :: M.Map Design Int -> [Towel] -> Design -> (M.Map Design Int, Int)
-countPossibilities knownCombos towels design
-  | M.member design knownCombos = (M.empty, fromJust $ M.lookup design knownCombos)
-  | null design = (knownCombos, 1)
-  | null potentialTowels = (M.insert design 0 knownCombos, 0)
-  | otherwise = (M.insert design newSum newMap, newSum)
+updateMapForDesign :: M.Map Design Int -> [Towel] -> Design -> M.Map Design Int
+updateMapForDesign knownCombos towels design
+  | M.member design knownCombos = knownCombos
+  | design `elem` towels = M.insert design (1+newSum) knownCombos
+  | null potentialTowels = M.insert design 0 knownCombos
+  | otherwise = M.insert design newSum knownCombos
   where
     potentialTowels = [towel | towel <- towels, towel `isPrefixOf` design]
     subDesigns = map (subDesign design) potentialTowels
-    results = map (countPossibilities knownCombos towels) subDesigns
-    newMap = M.unions (knownCombos : map fst results)
-    newSum = sum $ map snd results
+    results = mapMaybe (`M.lookup` knownCombos) subDesigns
+    newSum = sum results
 
 subDesign :: Design -> Towel -> Design
 subDesign design towel = drop (length towel) design
@@ -48,11 +47,10 @@ subDesign design towel = drop (length towel) design
 processDesignBackwards :: M.Map Design Int -> [Towel] -> Design -> Design -> M.Map Design Int
 processDesignBackwards map towels design subDesign
   | subDesign == design = updatedMap
-  | M.member subDesign map = processDesignBackwards map towels design nextSubDesign
   | otherwise = processDesignBackwards updatedMap towels design nextSubDesign
   where
     nextSubDesign = drop (length design - length subDesign - 1) design
-    (updatedMap, _) = countPossibilities map towels subDesign
+    updatedMap = updateMapForDesign map towels subDesign
 
 processDesigns :: [Towel] -> [Design] -> M.Map Design Int -> M.Map Design Int
 processDesigns towels [] map = map
