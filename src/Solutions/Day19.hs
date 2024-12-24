@@ -7,11 +7,10 @@ import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions, printTestSolutions,
   )
-import Text.Trifecta (Parser, alphaNum, anyChar, commaSep, letter, many, manyTill, sepBy, some, string, token, try)
+import Text.Trifecta (Parser, alphaNum, letter, manyTill, sepBy, some, string, token)
 import Data.List (isPrefixOf)
 import qualified Data.Map as M
 import Data.Maybe (fromJust, mapMaybe)
-import Debug.Trace
 
 type Stripe = Char
 
@@ -46,27 +45,27 @@ countPossibilities knownCombos towels design
 subDesign :: Design -> Towel -> Design
 subDesign design towel = drop (length towel) design
 
-warmMap :: M.Map Design Int -> [Towel] -> Design -> Design -> M.Map Design Int
-warmMap map towels design subDesign
+processDesignBackwards :: M.Map Design Int -> [Towel] -> Design -> Design -> M.Map Design Int
+processDesignBackwards map towels design subDesign
   | subDesign == design = updatedMap
-  | M.member subDesign map = warmMap map towels design nextSubDesign
-  | otherwise = warmMap updatedMap towels design nextSubDesign
+  | M.member subDesign map = processDesignBackwards map towels design nextSubDesign
+  | otherwise = processDesignBackwards updatedMap towels design nextSubDesign
   where
     nextSubDesign = drop (length design - length subDesign - 1) design
     (updatedMap, _) = countPossibilities map towels subDesign
 
-makeMap :: [Towel] -> [Design] -> M.Map Design Int -> M.Map Design Int
-makeMap towels [] map = map
-makeMap towels designs map = makeMap towels (tail designs) updatedMap
+processDesigns :: [Towel] -> [Design] -> M.Map Design Int -> M.Map Design Int
+processDesigns towels [] map = map
+processDesigns towels designs map = processDesigns towels (tail designs) updatedMap
   where
-    updatedMap = warmMap map towels (head designs) [last $ head designs]
+    updatedMap = processDesignBackwards map towels (head designs) [last $ head designs]
 
 part1 :: ([Towel], [Design]) -> Int
-part1 (towels, designs) = length $ filter (>0) $ mapMaybe (`M.lookup` initialMap) designs
+part1 (towels, designs) = length $ filter (>0) $ mapMaybe (`M.lookup` allCounts) designs
   where
-    initialMap = makeMap towels designs M.empty
+    allCounts = processDesigns towels designs M.empty
 
 part2 :: ([Towel], [Design]) -> Int
-part2 (towels, designs) = sum $ mapMaybe (`M.lookup` initialMap) designs
+part2 (towels, designs) = sum $ mapMaybe (`M.lookup` allCounts) designs
   where
-    initialMap = makeMap towels designs M.empty
+    allCounts = processDesigns towels designs M.empty
