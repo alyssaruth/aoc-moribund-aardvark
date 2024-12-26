@@ -9,18 +9,22 @@ import Common.AoCSolutions
   )
 import Common.Geometry
 import Text.Trifecta (CharParsing (anyChar), Parser, many)
-import Data.Set (Set, elemAt, (\\))
+import Data.Set (Set, elemAt, (\\), notMember, union, fromList)
 import qualified Data.Map as M
 import Data.Maybe (fromJust, isJust, mapMaybe)
 import qualified Data.List
 import Common.ListUtils (associateBy)
+import Data.List (nub)
+import Linear (V2(V2))
 
 data RaceState = RaceState{visited :: M.Map Position Int, walls :: Set Position, end :: Position, time :: Int, position :: Position}
   deriving (Show, Eq, Ord)
 
+data PartialCheat = PartialCheat{steps :: Int, points :: [Position]}
+
 aoc20 :: IO ()
 aoc20 = do
-  printSolutions 20 $ MkAoCSolution parseInput part1
+  printTestSolutions 20 $ MkAoCSolution parseInput part1
   printSolutions 20 $ MkAoCSolution parseInput part2
 
 parseInput :: Parser Grid
@@ -47,28 +51,37 @@ race grid = completeRace grid startingState
     walls = M.keysSet $ M.filter (=='#') grid
     startingState = RaceState M.empty walls end 0 start
 
-
-attemptCheat :: Grid -> M.Map Position Int -> (Position, Int) -> [Int]
-attemptCheat grid raceResults (startPosition, time) = mapMaybe (scoreCheat raceResults (time+1)) neighbours ++ mapMaybe (scoreCheat raceResults (time+2)) neighbours2
+attemptCheat :: Grid -> Int -> M.Map Position Int -> (Position, Int) -> [Int]
+attemptCheat grid maxDepth timeFromPosition (startPosition, time) = concatMap (cheatScores timeFromPosition time) partialCheats
   where
-    neighbours = M.keys $ M.filter (=='#') $ gridOrthogonalNeighbours grid startPosition
-    neighboursOfNeighbours = Data.List.concatMap (M.keys . gridOrthogonalNeighbours grid) neighbours
-    neighbours2 = [neighbour | neighbour <- neighboursOfNeighbours, neighbour `notElem` neighbours, neighbour /= startPosition]
+    pathPoints = associateBy (`distance` startPosition) $ M.keys timeFromPosition
+    distances = [2..maxDepth]
+    partialCheats = map (toPartialCheat startPosition pathPoints) distances
 
-scoreCheat :: M.Map Position Int -> Int -> Position -> Maybe Int
-scoreCheat timeFromPosition time position = if isJust endTime then Just (time + fromJust endTime) else Nothing
+toPartialCheat :: Position -> M.Map Int [Point] -> Int -> PartialCheat
+toPartialCheat position pathPoints depth = PartialCheat depth validPoints
   where
-    endTime = M.lookup position timeFromPosition
+    validPoints = M.findWithDefault [] depth pathPoints
 
-part1 :: Grid -> Int
-part1 grid = length $ filter (>=100) savings
+cheatScores :: M.Map Position Int -> Int -> PartialCheat -> [Int]
+cheatScores timeFromPosition time (PartialCheat steps points) = map ((+steps) . (+time)) usefulPoints
+  where
+    usefulPoints = mapMaybe (`M.lookup` timeFromPosition) points
+
+distance :: Point -> Point -> Int
+distance (V2 x1 y1) (V2 x2 y2) = abs (x1 - x2) + abs (y1 - y2)
+
+computeSavings :: Int -> Grid -> [Int]
+computeSavings cheatDepth grid = Data.List.map (totalTime -) $ concatMap (filter (< totalTime) . attemptCheat grid cheatDepth timeFromPosition) cheatLocations
   where
     raceState = race grid
     totalTime = time raceState
     timeToPosition = M.insert (end raceState) totalTime $ visited raceState
     timeFromPosition = M.map (totalTime -) timeToPosition
     cheatLocations = M.toList timeToPosition
-    savings = Data.List.map (totalTime -) $ concatMap (filter (< totalTime) . attemptCheat grid timeFromPosition) cheatLocations
 
-part2 :: Grid -> String
-part2 = undefined
+part1 :: Grid -> Int
+part1 = length . filter (>=100) . computeSavings 2
+
+part2 :: Grid -> Int
+part2 = length . filter (>=100) . computeSavings 20
