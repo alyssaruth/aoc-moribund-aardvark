@@ -9,9 +9,8 @@ import Common.AoCSolutions
   )
 import Common.Geometry
 import Text.Trifecta (CharParsing (anyChar), Parser, many)
-import Data.Set (Set, (\\), insert, toList, map, empty, size, elemAt)
+import Data.Set (Set, elemAt, (\\))
 import qualified Data.Map as M
-import Debug.Trace (traceShow)
 import Data.Maybe (fromJust, isJust, mapMaybe)
 import qualified Data.List
 import Common.ListUtils (associateBy)
@@ -57,7 +56,7 @@ attemptCheat grid raceResults (startPosition, time) = mapMaybe (scoreCheat raceR
     neighbours2 = [neighbour | neighbour <- neighboursOfNeighbours, neighbour `notElem` neighbours, neighbour /= startPosition]
 
 scoreCheat :: M.Map Position Int -> Int -> Position -> Maybe Int
-scoreCheat timeFromPosition time position = traceShow (show endTime) $ if isJust endTime then Just (time + fromJust endTime) else Nothing
+scoreCheat timeFromPosition time position = if isJust endTime then Just (time + fromJust endTime) else Nothing
   where
     endTime = M.lookup position timeFromPosition
 
@@ -68,10 +67,8 @@ part1 grid = length $ filter (>=100) savings
     totalTime = time raceState
     timeToPosition = M.insert (end raceState) totalTime $ visited raceState
     timeFromPosition = M.map (totalTime -) timeToPosition
-    stepPairs = M.toList timeToPosition
-    savings = Data.List.map (totalTime -) $ concatMap (filter (< totalTime) . attemptCheat grid timeFromPosition) stepPairs
-
-
+    cheatLocations = M.toList timeToPosition
+    savings = Data.List.map (totalTime -) $ concatMap (filter (< totalTime) . attemptCheat grid timeFromPosition) cheatLocations
 
 part2 :: Grid -> String
 part2 = undefined
