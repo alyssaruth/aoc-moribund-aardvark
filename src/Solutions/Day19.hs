@@ -5,12 +5,13 @@ where
 
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
-    printSolutions, printTestSolutions,
+    printSolutions,
+    printTestSolutions,
   )
-import Text.Trifecta (Parser, alphaNum, letter, manyTill, sepBy, some, string, token)
 import Data.List (isPrefixOf)
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
+import Text.Trifecta (Parser, alphaNum, letter, manyTill, sepBy, some, string, token)
 
 type Stripe = Char
 
@@ -32,7 +33,7 @@ parseInput = do
 updateMapForDesign :: M.Map Design Int -> [Towel] -> Design -> M.Map Design Int
 updateMapForDesign knownCombos towels design
   | M.member design knownCombos = knownCombos
-  | design `elem` towels = M.insert design (1+newSum) knownCombos
+  | design `elem` towels = M.insert design (1 + newSum) knownCombos
   | otherwise = M.insert design newSum knownCombos
   where
     potentialTowels = [towel | towel <- towels, towel `isPrefixOf` design]
@@ -46,7 +47,7 @@ subDesign design towel = drop (length towel) design
 processDesignBackwards :: M.Map Design Int -> [Towel] -> Design -> Int -> M.Map Design Int
 processDesignBackwards map towels design tailLength
   | tailLength == length design = updatedMap
-  | otherwise = processDesignBackwards updatedMap towels design (tailLength+1)
+  | otherwise = processDesignBackwards updatedMap towels design (tailLength + 1)
   where
     subDesign = reverse $ take tailLength (reverse design)
     updatedMap = updateMapForDesign map towels subDesign
@@ -59,10 +60,11 @@ processDesigns towels designs map = processDesigns towels (tail designs) updated
 
 countDesignCombos :: ([Towel], [Design]) -> [Int]
 countDesignCombos (towels, designs) = mapMaybe (`M.lookup` allCounts) designs
-  where allCounts = processDesigns towels designs M.empty
+  where
+    allCounts = processDesigns towels designs M.empty
 
 part1 :: ([Towel], [Design]) -> Int
-part1 = length . filter (>0) . countDesignCombos
+part1 = length . filter (> 0) . countDesignCombos
 
 part2 :: ([Towel], [Design]) -> Int
 part2 = sum . countDesignCombos
