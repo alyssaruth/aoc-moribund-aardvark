@@ -1,4 +1,7 @@
-module Solutions.Day20 where
+module Solutions.Day20
+  ( aoc20,
+  )
+where
 
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
@@ -6,9 +9,6 @@ import Common.AoCSolutions
     printTestSolutions,
   )
 import Common.Geometry
-import Common.ListUtils (associateBy)
-import Data.List (nub)
-import qualified Data.List
 import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
 import Data.Set (Set, elemAt, (\\))
