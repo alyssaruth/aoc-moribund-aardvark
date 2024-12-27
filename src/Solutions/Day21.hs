@@ -14,10 +14,12 @@ import Control.Lens ((^.))
 import Data.List (nub)
 import Data.Char (isDigit)
 import Debug.Trace (traceShow)
+import Common.ListUtils (window2)
+import qualified Data.Map as M
+import Data.Maybe (fromJust, fromMaybe)
 
 type Inputs = [Char]
-data Keypad = Keypad {layout :: Grid, arm :: Position}
-
+data Keypad = Keypad {layout :: Grid, arm :: Position, costsMap :: M.Map (Char, Char) Int}
 
 codeEntryCombos :: Keypad -> Inputs -> [Inputs]
 codeEntryCombos keyPad keys = enterCode keyPad keys [""]
@@ -25,10 +27,13 @@ codeEntryCombos keyPad keys = enterCode keyPad keys [""]
 enterCode :: Keypad -> Inputs -> [Inputs] -> [Inputs]
 enterCode keyPad keys inputCombos
  | keys == "" = inputCombos
- | otherwise = enterCode newKeyPad (tail keys) $ concatMap (appendInputs nextInputs) inputCombos
+ | otherwise = enterCode newKeyPad (tail keys) inputsToCurrentKey
   where
     nextKey = head keys
     (newKeyPad, nextInputs) = moveArm keyPad nextKey
+    inputsToCurrentKey = concatMap (appendInputs nextInputs) inputCombos
+    --minCost = minimum $ map (computeInputCost $ costsMap keyPad) inputsToCurrentKey
+    --doubleFilteredSequences = filter (\x -> computeInputCost (costsMap keyPad) x == minCost) inputsToCurrentKey
 
 appendInputs :: [Inputs] -> Inputs -> [Inputs]
 appendInputs newInputs currentInputs = map (currentInputs ++) newInputs
@@ -46,7 +51,7 @@ moveArm keyPad nextKey
     yDelta = (desiredPosition ^. _y) - (arm keyPad ^. _y)
     xKeys = xDeltaToKeyPresses xDelta
     yKeys = yDeltaToKeyPresses yDelta
-    newKeyPad = Keypad (layout keyPad) desiredPosition
+    newKeyPad = Keypad (layout keyPad) desiredPosition (costsMap keyPad)
 
 xDeltaToKeyPresses :: Int -> Inputs
 xDeltaToKeyPresses delta = replicate (abs delta) key
@@ -66,29 +71,67 @@ aoc21 = do
 parseInput :: Parser [String]
 parseInput = some $ token $ some alphaNum
 
-part1 :: [String] -> Int
-part1 codes = sum $ map complexity codes
-
-shortestButtonPressSequence :: String -> Int
-shortestButtonPressSequence code = minimum $ map length $ addKeyPad directionalKeyPad $ addKeyPad directionalKeyPad numericCombos
+shortestButtonPressSequence :: Int -> String -> Int
+shortestButtonPressSequence directionalKeypads code = minimum $ map length $ addKeyPads directionalKeypads directionalKeyPad numericCombos
   where
     numericKeyPad = makeKeypad "789\n456\n123\n.0A"
     directionalKeyPad = makeKeypad ".^A\n<v>"
     numericCombos = codeEntryCombos numericKeyPad code
 
+addKeyPads :: Int -> Keypad -> [Inputs] -> [Inputs]
+addKeyPads number keyPad inputs
+  | number == 0 = inputs
+  | otherwise = addKeyPads (number-1) keyPad $ addKeyPad keyPad inputs
+
 makeKeypad :: String -> Keypad
-makeKeypad lines = Keypad grid (locate 'A' grid)
+makeKeypad lines = Keypad grid (locate 'A' grid) (buildCostsMap grid)
   where
     grid = enumerateMultilineStringToVectorMap lines
 
-complexity :: String -> Int
-complexity code = traceShow (show shortestSequence ++ " * " ++ show numericPart) $ numericPart * shortestButtonPressSequence code
+complexity :: Int -> String -> Int
+complexity keyPads code = numericPart * shortestButtonPressSequence keyPads code
   where
     numericPart = read $ filter isDigit code
-    shortestSequence = shortestButtonPressSequence code
+    shortestSequence = shortestButtonPressSequence keyPads code
 
 addKeyPad :: Keypad -> [Inputs] -> [Inputs]
-addKeyPad keyPad = concatMap (codeEntryCombos keyPad)
+--addKeyPad keyPad inputs = traceShow (show (length newSequences) ++ "->" ++ show (length doubleFilteredSequences)) $ take 1 doubleFilteredSequences
+addKeyPad keyPad inputs = newSequences
+  where
+    newSequences = concatMap (codeEntryCombos keyPad) inputs
+    -- minCost = minimum $ map (computeInputCost costsMap) newSequences
+    -- doubleFilteredSequences = filter (\x -> computeInputCost costsMap x == minCost) newSequences
 
-part2 :: [String] -> String
-part2 = undefined
+
+buildCostsMap :: Grid -> M.Map (Char, Char) Int
+buildCostsMap grid = M.fromList $ map (\pair -> (pair, computeCost grid pair)) pairs
+  where
+    keys = filter (/='.') $ M.elems grid
+    pairs = concatMap (keyPairs keys) keys
+
+computeCost :: Grid -> (Char, Char) -> Int
+computeCost layout (start, end) = length $ head options
+  where
+    keyPad = Keypad layout (locate start layout) M.empty
+    (_, options) = moveArm keyPad end
+
+lookupCost :: M.Map (Char, Char) Int -> (Char, Char) -> Int
+lookupCost costMap keyCombo = fromMaybe 0 result
+  where
+    result = M.lookup keyCombo costMap
+
+keyPairs :: [Char] -> Char ->  [(Char, Char)]
+keyPairs allKeys key = map (\other -> (key, other)) allKeys
+
+computeInputCost :: M.Map (Char, Char) Int -> Inputs -> Int
+computeInputCost costMap inputs = sum $ map (lookupCost costMap) $ window2 inputs
+
+
+-- countDirectionChanges :: Inputs -> Int
+-- countDirectionChanges seq = length $ filter (uncurry (/=)) $ window2 seq
+
+part1 :: [String] -> Int
+part1 codes = sum $ map (complexity 2) codes
+
+part2 :: [String] -> Int
+part2 codes = undefined
