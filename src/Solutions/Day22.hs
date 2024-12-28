@@ -23,14 +23,6 @@ parseInput = some $ token integer
 part1 :: [Integer] -> Int
 part1 = sum . map (getNthEvolution 2000 . fromInteger)
 
-part2 :: [Integer] -> Int
-part2 secretNumbers = maximum $ M.elems $ foldl updateDeltaMap M.empty secretNumbers
-
-updateDeltaMap :: M.Map [Int] Int -> Integer -> M.Map [Int] Int
-updateDeltaMap mapSoFar secretNumber = traceShow secretNumber $ M.unionWith (+) mapSoFar newMap
-  where
-    newMap = makeDeltaMap 2000 (fromInteger secretNumber)
-
 getNthEvolution :: Int -> Int -> Int
 getNthEvolution n num
   | n == 0 = num
@@ -44,6 +36,14 @@ evolveSecretNumber num = mixAndPrune stepTwo (stepTwo * 2048)
 
 mixAndPrune :: Int -> Int -> Int
 mixAndPrune secretNumber newValue = (secretNumber `xor` newValue) `mod` 16777216
+
+part2 :: [Integer] -> Int
+part2 = maximum . M.elems . foldl updateDeltaMap M.empty
+
+updateDeltaMap :: M.Map [Int] Int -> Integer -> M.Map [Int] Int
+updateDeltaMap mapSoFar secretNumber = traceShow secretNumber $ M.unionWith (+) mapSoFar newMap
+  where
+    newMap = makeDeltaMap 2000 (fromInteger secretNumber)
 
 makeDeltaMap :: Int -> Int -> M.Map [Int] Int
 makeDeltaMap n secretNumber = M.fromList $ reverse $ imap (toPair priceSequence) (windowN 4 differences)
