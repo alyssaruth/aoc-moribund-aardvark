@@ -21,37 +21,65 @@ import Data.Maybe (fromJust, fromMaybe)
 type Inputs = [Char]
 data Keypad = Keypad {layout :: Grid, arm :: Position, costsMap :: M.Map (Char, Char) Int}
 
+data DistancePreference = X_FIRST | Y_FIRST | NEITHER
+  deriving (Eq, Show, Bounded, Enum, Ord)
+
+aoc21 :: IO ()
+aoc21 = do
+  printSolutions 21 $ MkAoCSolution parseInput part1
+  printSolutions 21 $ MkAoCSolution parseInput part2
+
+parseInput :: Parser [String]
+parseInput = some $ token $ some alphaNum
+
 codeEntryCombos :: Keypad -> Inputs -> [Inputs]
 codeEntryCombos keyPad keys = enterCode keyPad keys [""]
 
 enterCode :: Keypad -> Inputs -> [Inputs] -> [Inputs]
 enterCode keyPad keys inputCombos
  | keys == "" = inputCombos
- | otherwise = enterCode newKeyPad (tail keys) inputsToCurrentKey
+ | otherwise = enterCode newKeyPad (tail keys) nextInputs
   where
     nextKey = head keys
-    (newKeyPad, nextInputs) = moveArm keyPad nextKey
-    inputsToCurrentKey = concatMap (appendInputs nextInputs) inputCombos
-    --minCost = minimum $ map (computeInputCost $ costsMap keyPad) inputsToCurrentKey
-    --doubleFilteredSequences = filter (\x -> computeInputCost (costsMap keyPad) x == minCost) inputsToCurrentKey
+    newKeyPad = updateKeyPad nextKey keyPad
+    nextInputs = concatMap (moveArm keyPad nextKey) inputCombos
 
-appendInputs :: [Inputs] -> Inputs -> [Inputs]
-appendInputs newInputs currentInputs = map (currentInputs ++) newInputs
-
-moveArm :: Keypad -> Char -> (Keypad, [Inputs])
-moveArm keyPad nextKey
- | desiredPosition == arm keyPad = (keyPad, ["A"])
- | badX == (arm keyPad ^. _x) && badY == (yDelta + arm keyPad ^. _y) = (newKeyPad, [xKeys ++ yKeys ++ ['A']])
- | badY == (arm keyPad ^. _y) && badX == (xDelta + arm keyPad ^. _x) = (newKeyPad, [yKeys ++ xKeys ++ ['A']])
- | otherwise = (newKeyPad, nub [xKeys ++ yKeys ++ ['A'], yKeys ++ xKeys ++ ['A']])
+moveArm :: Keypad -> Char -> Inputs -> [Inputs]
+moveArm keyPad nextKey inputs
+ | badX == (arm keyPad ^. _x) && badY == (yDelta + arm keyPad ^. _y) = [xFirst] -- Prevent moving vertically to empty space
+ | badY == (arm keyPad ^. _y) && badX == (xDelta + arm keyPad ^. _x) = [yFirst] -- Prevent moving horizontally to empty space
+ | distancePref == X_FIRST = [xFirst]
+ | distancePref == Y_FIRST = [yFirst]
+ | otherwise = [xFirst, yFirst]
   where
     (V2 badX badY) = locate '.' (layout keyPad)
+    previousPosition = locate (last inputs) (layout keyPad)
     desiredPosition = locate nextKey (layout keyPad)
     xDelta = (desiredPosition ^. _x) - (arm keyPad ^. _x)
     yDelta = (desiredPosition ^. _y) - (arm keyPad ^. _y)
     xKeys = xDeltaToKeyPresses xDelta
     yKeys = yDeltaToKeyPresses yDelta
-    newKeyPad = Keypad (layout keyPad) desiredPosition (costsMap keyPad)
+    xFirst = inputs ++ xKeys ++ yKeys ++ ['A']
+    yFirst = inputs ++ yKeys ++ xKeys ++ ['A']
+    distancePref = computeDistancePreference inputs keyPad xKeys yKeys
+
+computeDistancePreference :: Inputs -> Keypad -> Inputs -> Inputs -> DistancePreference
+computeDistancePreference inputsSoFar keyPad xKeys yKeys
+  | xKeys == "" || yKeys == "" = X_FIRST -- Equivalent to Y_FIRST, just pick one
+  | inputsSoFar == "" = NEITHER
+  | xCost < yCost = X_FIRST
+  | yCost < xCost = Y_FIRST
+  | otherwise = NEITHER
+  where
+    previousKey = last inputsSoFar
+    xKey = head xKeys
+    yKey = head yKeys
+    xCost = fromMaybe 0 $ M.lookup (previousKey, xKey) (costsMap keyPad)
+    yCost = fromMaybe 0 $ M.lookup (previousKey, yKey) (costsMap keyPad)
+
+
+updateKeyPad :: Char -> Keypad -> Keypad
+updateKeyPad nextKey (Keypad layout _ costsMap) = Keypad layout (locate nextKey layout) costsMap
 
 xDeltaToKeyPresses :: Int -> Inputs
 xDeltaToKeyPresses delta = replicate (abs delta) key
@@ -62,14 +90,6 @@ yDeltaToKeyPresses :: Int -> Inputs
 yDeltaToKeyPresses delta = replicate (abs delta) key
   where
     key = if delta < 0 then '^' else 'v'
-
-aoc21 :: IO ()
-aoc21 = do
-  printSolutions 21 $ MkAoCSolution parseInput part1
-  printSolutions 21 $ MkAoCSolution parseInput part2
-
-parseInput :: Parser [String]
-parseInput = some $ token $ some alphaNum
 
 shortestButtonPressSequence :: Int -> String -> Int
 shortestButtonPressSequence directionalKeypads code = minimum $ map length $ addKeyPads directionalKeypads directionalKeyPad numericCombos
@@ -95,12 +115,11 @@ complexity keyPads code = numericPart * shortestButtonPressSequence keyPads code
     shortestSequence = shortestButtonPressSequence keyPads code
 
 addKeyPad :: Keypad -> [Inputs] -> [Inputs]
---addKeyPad keyPad inputs = traceShow (show (length newSequences) ++ "->" ++ show (length doubleFilteredSequences)) $ take 1 doubleFilteredSequences
-addKeyPad keyPad inputs = newSequences
+addKeyPad keyPad inputs = traceShow (show (length newSequences) ++ "->" ++ show (length filteredSequences)) $ take 1 filteredSequences
   where
     newSequences = concatMap (codeEntryCombos keyPad) inputs
-    -- minCost = minimum $ map (computeInputCost costsMap) newSequences
-    -- doubleFilteredSequences = filter (\x -> computeInputCost costsMap x == minCost) newSequences
+    minCost = minimum $ map (computeInputCost (costsMap keyPad)) newSequences
+    filteredSequences = filter (\x -> computeInputCost (costsMap keyPad) x == minCost) newSequences
 
 
 buildCostsMap :: Grid -> M.Map (Char, Char) Int
@@ -110,10 +129,10 @@ buildCostsMap grid = M.fromList $ map (\pair -> (pair, computeCost grid pair)) p
     pairs = concatMap (keyPairs keys) keys
 
 computeCost :: Grid -> (Char, Char) -> Int
-computeCost layout (start, end) = length $ head options
+computeCost layout (start, end) = abs (x1 - x2) + abs (y1 - y2)
   where
-    keyPad = Keypad layout (locate start layout) M.empty
-    (_, options) = moveArm keyPad end
+    (V2 x1 y1) = locate start layout
+    (V2 x2 y2) = locate end layout
 
 lookupCost :: M.Map (Char, Char) Int -> (Char, Char) -> Int
 lookupCost costMap keyCombo = fromMaybe 0 result
@@ -134,4 +153,4 @@ part1 :: [String] -> Int
 part1 codes = sum $ map (complexity 2) codes
 
 part2 :: [String] -> Int
-part2 codes = undefined
+part2 codes = shortestButtonPressSequence 4 "029A"
