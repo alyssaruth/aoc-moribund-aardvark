@@ -1,20 +1,13 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Use tuple-section" #-}
-module Solutions.Day23
-  ( aoc23,
-  )
-where
+module Solutions.Day23 (aoc23) where
 
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
     printTestSolutions,
   )
-import Data.List (foldl, intercalate, intersect, isPrefixOf, nub, (\\))
+import Data.List (intercalate, intersect, isPrefixOf, nub)
 import qualified Data.Map as M
-import Data.Set (Set, empty, foldl, fromList, insert, intersection, size, toList, union)
-import Debug.Trace
+import Data.Set (Set, delete, fromList, isSubsetOf, toList)
 import Text.Trifecta (Parser, TokenParsing (token), alphaNum, count, some, string)
 
 type Computer = String
@@ -68,20 +61,26 @@ part1 = length . filter canContainChiefHistorian . findSubnetworks . makeConnect
 canContainChiefHistorian :: Set Computer -> Bool
 canContainChiefHistorian = any (isPrefixOf "t")
 
-expandToLargest :: M.Map Computer [Computer] -> [Set Computer] -> Set Computer
-expandToLargest network subnetworks
-  | null expandedSubnetworks = head subnetworks
-  | otherwise = traceShow expandedSubnetworks $ expandToLargest network expandedSubnetworks
-  where
-    expandedSubnetworks = nub $ concatMap (expandSubnetwork network) subnetworks
-
-expandSubnetwork :: M.Map Computer [Computer] -> Set Computer -> [Set Computer]
-expandSubnetwork network subnetwork = map (`insert` subnetwork) intersections
-  where
-    intersections = toList $ Data.List.foldl intersection (M.keysSet network) $ map (fromList . (network M.!)) $ toList subnetwork
-
 part2 :: [(Computer, Computer)] -> String
-part2 pairs = intercalate "," $ toList largestSubnetwork
+part2 pairs = intercalate "," $ toList $ findLargestSubnetwork network initialSubnetworks
   where
     network = makeConnectionsMap pairs
-    largestSubnetwork = expandToLargest network $ findSubnetworks network
+    initialSubnetworks = map (fromList . uncurry (:)) $ M.toList network
+
+findLargestSubnetwork :: M.Map Computer [Computer] -> [Set Computer] -> Set Computer
+findLargestSubnetwork network subnetworks
+  | not (null validSubnetworks) = head validSubnetworks
+  | otherwise = findLargestSubnetwork network $ concatMap splitSubnetwork subnetworks
+  where
+    validSubnetworks = filter (isValidSubnetwork network) subnetworks
+
+splitSubnetwork :: Set Computer -> [Set Computer]
+splitSubnetwork subnetwork = map (`delete` subnetwork) (toList subnetwork)
+
+isValidSubnetwork :: M.Map Computer [Computer] -> Set Computer -> Bool
+isValidSubnetwork networkMap subnetwork = all (isFullyConnected networkMap subnetwork) (toList subnetwork)
+
+isFullyConnected :: M.Map Computer [Computer] -> Set Computer -> Computer -> Bool
+isFullyConnected networkMap subnetwork computer = delete computer subnetwork `isSubsetOf` myConnections
+  where
+    myConnections = fromList $ networkMap M.! computer
