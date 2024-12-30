@@ -1,6 +1,4 @@
 module Solutions.Day24
-  ( aoc24,
-  )
 where
 
 import Common.AoCSolutions
@@ -15,6 +13,9 @@ import qualified Data.Map as M
 import qualified Data.Ord
 import Text.Parser.Char (alphaNum)
 import Text.Trifecta (Parser, integer, letter, many, some, string, token, try)
+import Numeric (showIntAtBase)
+import Data.Char (intToDigit, isDigit, digitToInt)
+import Debug.Trace (traceShow)
 
 type Wire = String
 
@@ -52,7 +53,7 @@ parseOperator "OR" = (.|.)
 parseOperator "AND" = (.&.)
 
 part1 :: (M.Map Wire Int, [WireEquation]) -> Int
-part1 (knownWires, equations) = getOutput $ resolveSystem knownWires equations
+part1 (knownWires, equations) = getBinaryNumber "z" $ resolveSystem knownWires equations
 
 resolveSystem :: M.Map Wire Int -> [WireEquation] -> M.Map Wire Int
 resolveSystem knownWires wireEquations
@@ -72,13 +73,47 @@ solveEquation knownWires (WireEquation leftWire rightWire operation destinationW
     operator = parseOperator operation
     result = (knownWires M.! leftWire) `operator` (knownWires M.! rightWire)
 
-getOutput :: M.Map Wire Int -> Int
-getOutput outputs = sum $ imap toDecimalPart zOutputs
-  where
-    zOutputs = map snd $ sortOn fst (filter (\(wire, value) -> "z" `isPrefixOf` wire) $ M.toList outputs)
+getBinaryNumber :: String -> M.Map Wire Int -> Int
+getBinaryNumber prefix wireValues = sum $ imap toDecimalPart $ rawValues prefix wireValues
+
+rawValues :: String -> M.Map Wire Int -> [Int]
+rawValues prefix wireValues = map snd $ sortOn fst $ wirePairs prefix wireValues
+
+wirePairs :: String -> M.Map Wire Int -> [(Wire, Int)]
+wirePairs prefix wireValues = filter (\(wire, value) -> prefix `isPrefixOf` wire) $ M.toList wireValues
 
 toDecimalPart :: Int -> Int -> Int
 toDecimalPart ix value = (2 ^ ix) * value
 
 part2 :: (M.Map Wire Int, [WireEquation]) -> String
-part2 = undefined
+part2 (knownWires, equations) = performAddition knownWires equations 15 23
+
+-- doOneDigitAdditions :: M.Map Wire Int -> [WireEquation] -> Int
+-- doOneDigitAdditions wires equations = undefined
+--   where
+--     pairs = sub
+
+
+base2 :: Int -> String
+base2 x = showIntAtBase 2 intToDigit x ""
+
+
+performAddition :: M.Map Wire Int -> [WireEquation] -> Int -> Int -> String
+performAddition originalWires wireEquations x y = show x ++ " + " ++ show y ++ " = " ++ show (getBinaryNumber "z" solution)
+  where
+    xWires = prepareWires originalWires "x" $ base2 x
+    yWires = prepareWires originalWires "y" $ base2 y
+    solution = resolveSystem (M.union xWires yWires) wireEquations
+
+prepareWires :: M.Map Wire Int -> String -> String -> M.Map Wire Int
+prepareWires originalWires prefix binaryValue = M.fromList newValues
+  where
+    keys = map fst (wirePairs prefix originalWires)
+    newValues = map (\key -> (key, getNewValue binaryValue key)) keys
+
+getNewValue :: String -> Wire -> Int
+getNewValue binaryValue wire
+  | numericWire >= length binaryValue = 0
+  | otherwise = digitToInt $ reverse binaryValue !! numericWire
+  where
+    numericWire = read $ filter isDigit wire
