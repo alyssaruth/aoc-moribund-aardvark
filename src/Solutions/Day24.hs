@@ -23,8 +23,6 @@ import Numeric (showIntAtBase)
 import Text.Parser.Char (alphaNum)
 import Text.Trifecta (Parser, integer, letter, many, some, string, token, try)
 
-maxDepth = 44
-
 type Wire = String
 
 data WireEquation = WireEquation {leftWire :: Wire, rightWire :: Wire, operation :: String, destinationWire :: Wire}
@@ -97,16 +95,6 @@ toDecimalPart ix value = (2 ^ ix) * value
 
 part2 :: (a, [WireEquation]) -> [Char]
 part2 (_, equations) = intercalate "," $ sort $ fixAdder equations []
--- part2 (inputs, equations) = performAddition preSwappedAdder 50 13
-
-preSwapAll :: [(Wire, Wire)] -> [WireEquation] -> [WireEquation]
-preSwapAll swaps wireEquations = foldl preSwap wireEquations swaps
-
-preSwap :: [WireEquation] -> (Wire, Wire) -> [WireEquation]
-preSwap wireEquations (a, b) = performSwap wireEquations [equationA, equationB]
-  where
-    equationA = head $ filter (\eq -> destinationWire eq == a) wireEquations
-    equationB = head $ filter (\eq -> destinationWire eq == b) wireEquations
 
 possibleSwaps :: [WireEquation] -> [[WireEquation]]
 possibleSwaps equations = choose equations 2
@@ -121,7 +109,8 @@ fixAdder equations wiresSwapped
   | isNothing result = wiresSwapped
   | otherwise = traceShow ("Failed at depth " ++ show result) $ fixAdder newEquations (wiresSwapped ++ newWires)
   where
-    result = verifyAdder maxDepth equations
+    maxDepth = calculateMaxDepth equations
+    result = verifyAdder 0 maxDepth equations
     (newEquations, newWires) = fixDepth equations (fromMaybe 0 result) wiresSwapped
 
 fixDepth :: [WireEquation] -> Int -> [Wire] -> ([WireEquation], [Wire])
@@ -169,23 +158,16 @@ verifyAdderInReverse depth equations
   where
     result = testBinaryAdder depth equations
 
-verifyAdder :: Int -> [WireEquation] -> Maybe Int
-verifyAdder = verifyAllDepths 0
-
 -- Verify depths incrementally until one fails
-verifyAllDepths :: Int -> Int -> [WireEquation] -> Maybe Int
-verifyAllDepths depth maxDepth equations
-  | not result = Just depth
+verifyAdder :: Int -> Int -> [WireEquation] -> Maybe Int
+verifyAdder depth maxDepth equations
+  | not $ testBinaryAdder depth equations = Just depth
   | depth == maxDepth = Nothing
-  | otherwise = traceShow ("Verified depth " ++ show depth) $ verifyAllDepths (depth + 1) maxDepth equations
-  where
-    result = testBinaryAdder depth equations
+  | otherwise = verifyAdder (depth + 1) maxDepth equations
 
 -- Test the binary adder at a specific "depth", by throwing a set of additions at it and verifying the results
 testBinaryAdder :: Int -> [WireEquation] -> Bool
-testBinaryAdder depth equations = all (testPasses equations) tests
-  where
-    tests = prepareTestSums depth
+testBinaryAdder depth equations = all (testPasses equations) (prepareTestSums depth)
 
 testPasses :: [WireEquation] -> (Int, Int) -> Bool
 testPasses equations (x, y) = performAddition equations x y == Just (x + y)
@@ -208,7 +190,7 @@ getSimpleSums depth
   | maxValue - minValue <= maxSums = map (\x -> (minValue, x)) [0 .. maxValue - minValue]
   | otherwise = firstHalf ++ secondHalf
   where
-    maxSums = 100
+    maxSums = 20
     minValue = 2 ^ depth
     maxValue = 2 ^ (depth + 1) - 1
     firstHalf = map (\x -> (minValue, x)) [0 .. (maxSums `div` 2)]
@@ -218,14 +200,18 @@ getSimpleSums depth
 performAddition :: [WireEquation] -> Int -> Int -> Maybe Int
 performAddition wireEquations x y = getBinaryNumber "z" <$> resolveSystem (M.union xWires yWires) wireEquations
   where
-    xWires = prepareWires "x" $ base2 x
-    yWires = prepareWires "y" $ base2 y
+    maxDepth = calculateMaxDepth wireEquations
+    xWires = prepareWires "x" maxDepth $ base2 x
+    yWires = prepareWires "y" maxDepth $ base2 y
 
 base2 :: Int -> String
 base2 x = showIntAtBase 2 intToDigit x ""
 
-prepareWires :: String -> String -> M.Map Wire Int
-prepareWires prefix binaryValue = M.fromList newValues
+calculateMaxDepth :: [WireEquation] -> Int
+calculateMaxDepth machine = 1 + maximum [read $ filter isDigit wire | wire <- map leftWire machine, "x" `isPrefixOf` wire]
+
+prepareWires :: String -> Int -> String -> M.Map Wire Int
+prepareWires prefix maxDepth binaryValue = M.fromList newValues
   where
     keys = map (makeWire prefix) [0 .. maxDepth]
     newValues = map (\key -> (key, getNewValue binaryValue key)) keys
