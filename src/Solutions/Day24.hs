@@ -1,3 +1,6 @@
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+
+{-# HLINT ignore "Use tuple-section" #-}
 module Solutions.Day24 where
 
 import Common.AoCSolutions
@@ -10,9 +13,9 @@ import Control.Lens (imap)
 import Data.Bits (xor, (.&.), (.|.))
 import Data.Char (digitToInt, intToDigit, isDigit)
 import Data.Either (isRight)
-import Data.List (isPrefixOf, sortBy, sortOn, (\\), intercalate, sort)
+import Data.List (intercalate, isPrefixOf, sort, sortBy, sortOn, (\\))
 import qualified Data.Map as M
-import Data.Maybe (fromMaybe, isNothing, fromJust, isJust)
+import Data.Maybe (fromJust, fromMaybe, isJust, isNothing)
 import qualified Data.Ord
 import Data.Set (Set, empty, fromList, intersection, member, union)
 import Debug.Trace (traceShow)
@@ -21,6 +24,17 @@ import Text.Parser.Char (alphaNum)
 import Text.Trifecta (Parser, integer, letter, many, some, string, token, try)
 
 maxDepth = 44
+
+preSwaps =
+  [ -- ("hgs", "qfj"),
+    ("z21", "z20"),
+    ("htp", "z15"),
+    ("bvc", "z05")
+    -- ("ggk", "rhv")
+    -- ("mvv", "z20")
+  ]
+
+preSwapped = concatMap (\(x, y) -> [x, y]) preSwaps
 
 type Wire = String
 
@@ -63,7 +77,7 @@ part1 (knownWires, equations) = getBinaryNumber "z" $ fromJust $ resolveSystem k
 resolveSystem :: M.Map Wire Int -> [WireEquation] -> Maybe (M.Map Wire Int)
 resolveSystem knownWires wireEquations
   | null wireEquations = Just knownWires
-  | null solvableEquations = Nothing --Some sort of cycle has occurred
+  | null solvableEquations = Nothing -- Some sort of cycle has occurred
   | otherwise = resolveSystem newMap (wireEquations \\ solvableEquations)
   where
     solvableEquations = filter (isSolvable knownWires) wireEquations
@@ -91,8 +105,21 @@ wirePairs prefix wireValues = filter (\(wire, value) -> prefix `isPrefixOf` wire
 toDecimalPart :: Int -> Int -> Int
 toDecimalPart ix value = (2 ^ ix) * value
 
-part2 :: (M.Map Wire Int, [WireEquation]) -> String
-part2 (_, equations) = intercalate "," $ sort $ fixAdder equations []
+-- part2 :: (M.Map Wire Int, [WireEquation]) -> [Bool]
+-- part2 (_, equations) = performAddition preSwapped 47 31
+-- part2 (_, equations) = testBinaryAdder 6 preSwapped
+part2 (_, equations) = intercalate "," $ sort $ fixAdder preSwappedAdder []
+  where
+    preSwappedAdder = preSwapAll preSwaps equations
+
+preSwapAll :: [(Wire, Wire)] -> [WireEquation] -> [WireEquation]
+preSwapAll swaps wireEquations = foldl preSwap wireEquations swaps
+
+preSwap :: [WireEquation] -> (Wire, Wire) -> [WireEquation]
+preSwap wireEquations (a, b) = performSwap wireEquations [equationA, equationB]
+  where
+    equationA = head $ filter (\eq -> destinationWire eq == a) wireEquations
+    equationB = head $ filter (\eq -> destinationWire eq == b) wireEquations
 
 possibleSwaps :: [WireEquation] -> [[WireEquation]]
 possibleSwaps equations = choose equations 2
@@ -108,47 +135,53 @@ fixAdder equations wiresSwapped
   | otherwise = traceShow ("Failed at depth " ++ show result) $ fixAdder newEquations (wiresSwapped ++ newWires)
   where
     result = verifyAdder maxDepth equations
-    (newEquations, newWires) = fixDepth equations (fromMaybe 0 result)
+    (newEquations, newWires) = fixDepth equations (fromMaybe 0 result) wiresSwapped
 
-fixDepth :: [WireEquation] -> Int -> ([WireEquation], [Wire])
-fixDepth equations depth
-  | depth == 0 = (equations, [])
-  | otherwise = traceShow ("Swapped wires " ++ show swappedWires) (fixedMachine, swappedWires)
+fixDepth :: [WireEquation] -> Int -> [Wire] -> ([WireEquation], [Wire])
+fixDepth equations depth wiresPreviouslySwapped = traceShow ("Swapped wires " ++ show swappedWires) (fixedMachine, swappedWires)
   where
-    swapsToTest = possibleSwaps $ swappableWires equations depth
+    swapsToTest = possibleSwaps $ swappableWires equations depth wiresPreviouslySwapped
     sortedSwapsToTest = sortOn (Data.Ord.Down . (\[a, b] -> includesWires [makeWire "z" depth] a || includesWires [makeWire "z" depth] b)) swapsToTest
     correctSwap = traceShow ("Testing " ++ show (length swapsToTest) ++ " swaps") $ head $ filter (testSwap equations depth) sortedSwapsToTest
     swappedWires = map destinationWire correctSwap
     fixedMachine = performSwap equations correctSwap
 
 -- If we've failed at depth N, then we know that x0...xn-1, y0...yn-1 and z0...zn-1 are wired up right already
-swappableWires :: [WireEquation] -> Int -> [WireEquation]
-swappableWires equations failedDepth = filter (not . includesWires allWires) equations
-  where
-    xWires = map (makeWire "x") [0..(failedDepth-1)]
-    yWires = map (makeWire "y") [0..(failedDepth-1)]
-    zWires = map (makeWire "z") [0..(failedDepth-1)]
-    allWires = xWires ++ yWires ++ zWires
+-- We also know we can ignore any wires we've already swapped
+swappableWires :: [WireEquation] -> Int -> [Wire] -> [WireEquation]
+swappableWires equations failedDepth wiresPreviouslySwapped = filter (not . includesWires preSwapped) equations
+  -- where
+  --   xWires = map (makeWire "x") [0 .. (failedDepth - 1)]
+  --   yWires = map (makeWire "y") [0 .. (failedDepth - 1)]
+  --   zWires = map (makeWire "z") [0 .. (failedDepth - 1)]
+  --   allWires = xWires ++ yWires ++ zWires ++ wiresPreviouslySwapped
 
 includesWires :: [Wire] -> WireEquation -> Bool
 includesWires wires (WireEquation leftWire rightWire _ destinationWire) = leftWire `elem` wires || rightWire `elem` wires || destinationWire `elem` wires
 
 testSwap :: [WireEquation] -> Int -> [WireEquation] -> Bool
---testSwap equations depth swap = traceShow ("Tested swap " ++ show swap ++ " result = " ++ show result) result
+-- testSwap equations depth swap = traceShow ("Tested swap " ++ show swap ++ " result = " ++ show result) result
 testSwap equations depth swap = result
   where
     newMachine = performSwap equations swap
-    result = verifyNoCycles newMachine && isNothing (verifyAdder depth newMachine)
-
--- Performing arbitrary swaps can result in cycles
-verifyNoCycles :: [WireEquation] -> Bool
-verifyNoCycles machine = isJust $ performAddition machine 0 0
+    result = isNothing (verifyAdderInReverse depth newMachine)
 
 performSwap :: [WireEquation] -> [WireEquation] -> [WireEquation]
-performSwap equations [a, b] = [newEquationA, newEquationB] ++ filter (/= b) (filter (/= a) equations)
+performSwap equations [a, b] = [newEquationA, newEquationB] ++ filtered
   where
     newEquationA = WireEquation (leftWire a) (rightWire a) (operation a) (destinationWire b)
     newEquationB = WireEquation (leftWire b) (rightWire b) (operation b) (destinationWire a)
+    filtered = [equation | equation <- equations, equation /= a, equation /= b]
+
+-- When verifying swaps, it's faster to go in reverse since the higher-order additions are more likely to fail
+-- This is particularly true because we already exclude various wires from consideration that would break the lower-order additions
+verifyAdderInReverse :: Int -> [WireEquation] -> Maybe Int
+verifyAdderInReverse depth equations
+  | not result = Just depth
+  | depth == 0 = Nothing
+  | otherwise = verifyAdderInReverse (depth - 1) equations
+  where
+    result = testBinaryAdder depth equations
 
 verifyAdder :: Int -> [WireEquation] -> Maybe Int
 verifyAdder = verifyAllDepths 0
@@ -158,7 +191,7 @@ verifyAllDepths :: Int -> Int -> [WireEquation] -> Maybe Int
 verifyAllDepths depth maxDepth equations
   | not result = Just depth
   | depth == maxDepth = Nothing
-  | otherwise = verifyAllDepths (depth + 1) maxDepth equations
+  | otherwise = traceShow ("Verified depth " ++ show depth) $ verifyAllDepths (depth + 1) maxDepth equations
   where
     result = testBinaryAdder depth equations
 
@@ -173,27 +206,40 @@ testPasses equations (x, y) = performAddition equations x y == Just (x + y)
 
 prepareTestSums :: Int -> [(Int, Int)]
 prepareTestSums depth =
-  concatMap
-    (\(x, y) -> [(x, y), (y, x)])
-    [ (minValue, 0),
-      (minValue, maxValue - minValue),
-      (minValue `div` 2, maxValue `div` 2),
-      (minValue `div` 2, minValue `div` 2)
-    ]
+  getSimpleSums depth
+    ++ [ (minValue `div` 2, maxValue `div` 2),
+         (minValue `div` 2, minValue `div` 2),
+         (middleValue `div` 2, middleValue `div` 2),
+         (middleValue `div` 2, middleValue `div` 3)
+       ]
   where
     minValue = 2 ^ depth
     maxValue = 2 ^ (depth + 1) - 1
+    middleValue = (minValue + maxValue) `div` 2
+
+getSimpleSums :: Int -> [(Int, Int)]
+getSimpleSums depth
+  | maxValue - minValue <= maxSums = map (\x -> (minValue, x)) [0 .. maxValue - minValue]
+  | otherwise = firstHalf ++ secondHalf
+  where
+    maxSums = 100
+    minValue = 2 ^ depth
+    maxValue = 2 ^ (depth + 1) - 1
+    firstHalf = map (\x -> (minValue, x)) [0 .. (maxSums `div` 2)]
+    secondHalf = map (\x -> (minValue, x)) [maxValue - minValue - (maxSums `div` 2) .. maxValue - minValue]
 
 -- Set up inputs for X and Y to perform a specific addition
 performAddition :: [WireEquation] -> Int -> Int -> Maybe Int
--- performAddition wireEquations x y = traceShow (show x ++ " + " ++ show y ++ " = " ++ show solution) solution
 performAddition wireEquations x y
   | isNothing resolved = Nothing
-  | otherwise = Just $ getBinaryNumber "z" (fromJust resolved)
+  | otherwise = solution
   where
+    -- \| otherwise = traceShow (show x ++ " + " ++ show y ++ " = " ++ show solution) solution
+
     xWires = prepareWires "x" $ base2 x
     yWires = prepareWires "y" $ base2 y
     resolved = resolveSystem (M.union xWires yWires) wireEquations
+    solution = Just $ getBinaryNumber "z" (fromJust resolved)
 
 base2 :: Int -> String
 base2 x = showIntAtBase 2 intToDigit x ""
