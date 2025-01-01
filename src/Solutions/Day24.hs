@@ -25,17 +25,6 @@ import Text.Trifecta (Parser, integer, letter, many, some, string, token, try)
 
 maxDepth = 44
 
-preSwaps =
-  [ -- ("hgs", "qfj"),
-    ("z21", "z20"),
-    ("htp", "z15"),
-    ("bvc", "z05")
-    -- ("ggk", "rhv")
-    -- ("mvv", "z20")
-  ]
-
-preSwapped = concatMap (\(x, y) -> [x, y]) preSwaps
-
 type Wire = String
 
 data WireEquation = WireEquation {leftWire :: Wire, rightWire :: Wire, operation :: String, destinationWire :: Wire}
@@ -105,12 +94,10 @@ wirePairs prefix wireValues = filter (\(wire, value) -> prefix `isPrefixOf` wire
 toDecimalPart :: Int -> Int -> Int
 toDecimalPart ix value = (2 ^ ix) * value
 
--- part2 :: (M.Map Wire Int, [WireEquation]) -> [Bool]
--- part2 (_, equations) = performAddition preSwapped 47 31
--- part2 (_, equations) = testBinaryAdder 6 preSwapped
-part2 (_, equations) = intercalate "," $ sort $ fixAdder preSwappedAdder []
-  where
-    preSwappedAdder = preSwapAll preSwaps equations
+
+part2 :: (a, [WireEquation]) -> [Char]
+part2 (_, equations) = intercalate "," $ sort $ fixAdder equations []
+-- part2 (inputs, equations) = performAddition preSwappedAdder 50 13
 
 preSwapAll :: [(Wire, Wire)] -> [WireEquation] -> [WireEquation]
 preSwapAll swaps wireEquations = foldl preSwap wireEquations swaps
@@ -142,25 +129,24 @@ fixDepth equations depth wiresPreviouslySwapped = traceShow ("Swapped wires " ++
   where
     swapsToTest = possibleSwaps $ swappableWires equations depth wiresPreviouslySwapped
     sortedSwapsToTest = sortOn (Data.Ord.Down . (\[a, b] -> includesWires [makeWire "z" depth] a || includesWires [makeWire "z" depth] b)) swapsToTest
-    correctSwap = traceShow ("Testing " ++ show (length swapsToTest) ++ " swaps") $ head $ filter (testSwap equations depth) sortedSwapsToTest
+    correctSwap = traceShow ("Testing " ++ show (length swapsToTest) ++ " swaps") $ head $ filter (testSwap equations (depth+1)) sortedSwapsToTest
     swappedWires = map destinationWire correctSwap
     fixedMachine = performSwap equations correctSwap
 
 -- If we've failed at depth N, then we know that x0...xn-1, y0...yn-1 and z0...zn-1 are wired up right already
 -- We also know we can ignore any wires we've already swapped
 swappableWires :: [WireEquation] -> Int -> [Wire] -> [WireEquation]
-swappableWires equations failedDepth wiresPreviouslySwapped = filter (not . includesWires preSwapped) equations
-  -- where
-  --   xWires = map (makeWire "x") [0 .. (failedDepth - 1)]
-  --   yWires = map (makeWire "y") [0 .. (failedDepth - 1)]
-  --   zWires = map (makeWire "z") [0 .. (failedDepth - 1)]
-  --   allWires = xWires ++ yWires ++ zWires ++ wiresPreviouslySwapped
+swappableWires equations failedDepth wiresPreviouslySwapped = filter (not . includesWires allWires) equations
+  where
+    xWires = map (makeWire "x") [0 .. (failedDepth - 1)]
+    yWires = map (makeWire "y") [0 .. (failedDepth - 1)]
+    zWires = map (makeWire "z") [0 .. (failedDepth - 1)]
+    allWires = xWires ++ yWires ++ zWires ++ wiresPreviouslySwapped
 
 includesWires :: [Wire] -> WireEquation -> Bool
 includesWires wires (WireEquation leftWire rightWire _ destinationWire) = leftWire `elem` wires || rightWire `elem` wires || destinationWire `elem` wires
 
 testSwap :: [WireEquation] -> Int -> [WireEquation] -> Bool
--- testSwap equations depth swap = traceShow ("Tested swap " ++ show swap ++ " result = " ++ show result) result
 testSwap equations depth swap = result
   where
     newMachine = performSwap equations swap
@@ -230,16 +216,10 @@ getSimpleSums depth
 
 -- Set up inputs for X and Y to perform a specific addition
 performAddition :: [WireEquation] -> Int -> Int -> Maybe Int
-performAddition wireEquations x y
-  | isNothing resolved = Nothing
-  | otherwise = solution
+performAddition wireEquations x y = getBinaryNumber "z" <$> resolveSystem (M.union xWires yWires) wireEquations
   where
-    -- \| otherwise = traceShow (show x ++ " + " ++ show y ++ " = " ++ show solution) solution
-
     xWires = prepareWires "x" $ base2 x
     yWires = prepareWires "y" $ base2 y
-    resolved = resolveSystem (M.union xWires yWires) wireEquations
-    solution = Just $ getBinaryNumber "z" (fromJust resolved)
 
 base2 :: Int -> String
 base2 x = showIntAtBase 2 intToDigit x ""
