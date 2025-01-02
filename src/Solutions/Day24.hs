@@ -92,7 +92,6 @@ wirePairs prefix wireValues = filter (\(wire, value) -> prefix `isPrefixOf` wire
 toDecimalPart :: Int -> Int -> Int
 toDecimalPart ix value = (2 ^ ix) * value
 
-
 part2 :: (a, [WireEquation]) -> [Char]
 part2 (_, equations) = intercalate "," $ sort $ fixAdder equations []
 
@@ -118,7 +117,7 @@ fixDepth equations depth wiresPreviouslySwapped = traceShow ("Swapped wires " ++
   where
     swapsToTest = possibleSwaps $ swappableWires equations depth wiresPreviouslySwapped
     sortedSwapsToTest = sortOn (Data.Ord.Down . (\[a, b] -> includesWires [makeWire "z" depth] a || includesWires [makeWire "z" depth] b)) swapsToTest
-    correctSwap = traceShow ("Testing " ++ show (length swapsToTest) ++ " swaps") $ head $ filter (testSwap equations (depth+1)) sortedSwapsToTest
+    correctSwap = traceShow ("Testing " ++ show (length swapsToTest) ++ " swaps") $ head $ filter (testSwap equations (depth + 1)) sortedSwapsToTest
     swappedWires = map destinationWire correctSwap
     fixedMachine = performSwap equations correctSwap
 
