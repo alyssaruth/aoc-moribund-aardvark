@@ -12,14 +12,14 @@ import Text.Trifecta (Parser, token, some, alphaNum)
 import Common.Geometry
 import Linear (R1(_x), R2(_y), V2 (V2))
 import Control.Lens ((^.))
-import Data.List (nub)
+import Data.List (nub, intercalate)
 import Data.Char (isDigit)
 import Debug.Trace (traceShow)
 import qualified Data.Map as M
 import Common.ListUtils (window2)
 
 type Inputs = [Char]
-data Keypad = Keypad {arm :: Char, optionsMap :: M.Map (Char, Char) Inputs}
+type Keypad = M.Map (Char, Char) Inputs
 
 aoc21 :: IO ()
 aoc21 = do
@@ -29,20 +29,8 @@ aoc21 = do
 parseInput :: Parser [String]
 parseInput = some $ token $ some alphaNum
 
-getKeySequence :: Keypad -> Inputs -> Inputs
-getKeySequence keyPad keys = enterCode keyPad keys ""
-
-enterCode :: Keypad -> Inputs -> Inputs -> Inputs
-enterCode keyPad keys inputsSoFar
- | keys == "" = inputsSoFar
- | otherwise = enterCode newKeyPad (tail keys) nextInputs
-  where
-    nextKey = head keys
-    newKeyPad = Keypad nextKey (optionsMap keyPad)
-    nextInputs = moveArm keyPad nextKey inputsSoFar
-
-moveArm :: Keypad -> Char -> Inputs -> Inputs
-moveArm keyPad nextKey inputs = inputs ++ optionsMap keyPad M.! (arm keyPad, nextKey)
+getKeySequence2 :: Keypad -> Inputs -> Inputs
+getKeySequence2 keyPad keys = intercalate "" $ map (keyPad M.!) $ window2 ("A" ++ keys)
 
 
 shortestButtonPressSequence :: Int -> String -> Int
@@ -50,17 +38,17 @@ shortestButtonPressSequence directionalKeypads code = length $ addKeyPads direct
   where
     numericKeyPad = makeKeypad "789\n456\n123\n.0A"
     directionalKeyPad = makeKeypad ".^A\n<v>"
-    numericCombo = getKeySequence numericKeyPad code
+    numericCombo = getKeySequence2 numericKeyPad code
 
 addKeyPads :: Int -> Keypad -> Inputs -> Inputs
 addKeyPads number keyPad inputs
   | number == 0 = inputs
   | otherwise = traceShow (length result) $ addKeyPads (number-1) keyPad result
   where
-    result = getKeySequence keyPad inputs
+    result = getKeySequence2 keyPad inputs
 
 makeKeypad :: String -> Keypad
-makeKeypad lines = Keypad 'A' (buildOptionsMap grid)
+makeKeypad lines = buildOptionsMap grid
   where
     grid = enumerateMultilineStringToVectorMap lines
 
@@ -126,4 +114,4 @@ part1 :: [String] -> Int
 part1 codes = sum $ map (complexity 2) codes
 
 part2 :: [String] -> Int
-part2 codes = shortestButtonPressSequence 10 "029A"
+part2 codes = shortestButtonPressSequence 15 "029A"
