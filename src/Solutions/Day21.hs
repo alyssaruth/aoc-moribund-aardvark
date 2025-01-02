@@ -16,9 +16,10 @@ import Data.List (nub)
 import Data.Char (isDigit)
 import Debug.Trace (traceShow)
 import qualified Data.Map as M
+import Common.ListUtils (window2)
 
 type Inputs = [Char]
-data Keypad = Keypad {arm :: Char, optionsMap :: M.Map (Char, Char) [Inputs]}
+data Keypad = Keypad {arm :: Char, optionsMap :: M.Map (Char, Char) Inputs}
 
 aoc21 :: IO ()
 aoc21 = do
@@ -41,33 +42,8 @@ enterCode keyPad keys inputsSoFar
     nextInputs = moveArm keyPad nextKey inputsSoFar
 
 moveArm :: Keypad -> Char -> Inputs -> Inputs
-moveArm keyPad nextKey inputs = inputs ++ nextInputs keyPad nextKey inputs
+moveArm keyPad nextKey inputs = inputs ++ optionsMap keyPad M.! (arm keyPad, nextKey)
 
-nextInputs :: Keypad -> Char -> Inputs -> Inputs
-nextInputs keyPad nextKey inputs
- | length options == 1 = head options
- | otherwise = distancePref
-  where
-    options = optionsMap keyPad M.! (arm keyPad, nextKey)
-    distancePref = computeDistancePreference options
-
-computeDistancePreference :: [Inputs] -> Inputs
-computeDistancePreference [xFirst, yFirst]
-  | xKey == '<' = xFirst
-  | otherwise = yFirst
-  where
-    xKey = head xFirst
-    yKey = head yFirst
-
-xDeltaToKeyPresses :: Int -> Inputs
-xDeltaToKeyPresses delta = replicate (abs delta) key
-  where
-    key = if delta < 0 then '<' else '>'
-
-yDeltaToKeyPresses :: Int -> Inputs
-yDeltaToKeyPresses delta = replicate (abs delta) key
-  where
-    key = if delta < 0 then '^' else 'v'
 
 shortestButtonPressSequence :: Int -> String -> Int
 shortestButtonPressSequence directionalKeypads code = length $ addKeyPads directionalKeypads directionalKeyPad numericCombo
@@ -94,11 +70,28 @@ complexity keyPads code = numericPart * shortestButtonPressSequence keyPads code
     numericPart = read $ filter isDigit code
     shortestSequence = shortestButtonPressSequence keyPads code
 
-computeOptions :: Grid -> (Char, Char) -> [Inputs]
-computeOptions grid (start, end)
- | badX == (currentPosition ^. _x) && badY == (yDelta + currentPosition ^. _y) = [xFirst] -- Prevent moving vertically to empty space
- | badY == (currentPosition ^. _y) && badX == (xDelta + currentPosition ^. _x) = [yFirst] -- Prevent moving horizontally to empty space
- | otherwise = nub [xFirst, yFirst]
+-- For every possible key pair on a keyPad, compute a single sequence of keypresses on a directional keypad that's guaranteed to be optimal.
+-- Changing direction is expensive as it requires the robot above us to move the arm. So we can immediately disregard sequences like ^>^.
+-- This means we only ever have at *most* 2 options - "xFirst" >^^A or "yFirst" ^^>A. To pick between these we do various things:
+--   - Some must be discounted due to the "panic" rule - one of the two paths would make a robot hover over empty space
+--   - Sometimes we only have one option anyway because it's a straight line, e.g. (2, 8) -> ^^A
+--   - Otherwise, things are not so obvious. But considering the layout of the directional keypad, we can still pick optimally:
+--           +---+---+
+--           | ^ | A |
+--       +---+---+---+
+--       | < | v | > |
+--       +---+---+---+
+--   - < is the most expensive direction - it is furthest from A. 
+--   - We're always going to return to A at the end, so if < is required we should do those first. 
+--   - If our horizontal component is >, then we should do the vertical part first.
+-- I haven't actually thought much about the numeric keypad case, but this seems to work there too for... some reason
+computeOption :: Grid -> (Char, Char) -> Inputs
+computeOption grid (start, end)
+ | badX == (currentPosition ^. _x) && badY == (yDelta + currentPosition ^. _y) = xFirst -- Prevent moving vertically to empty space
+ | badY == (currentPosition ^. _y) && badX == (xDelta + currentPosition ^. _x) = yFirst -- Prevent moving horizontally to empty space
+ | xFirst == yFirst = xFirst -- Only one actual option, i.e. straight line
+ | head xKeys == '<' = xFirst
+ | otherwise = yFirst
   where
     (V2 badX badY) = locate '.' grid
     currentPosition = locate start grid
@@ -110,8 +103,18 @@ computeOptions grid (start, end)
     xFirst = xKeys ++ yKeys ++ ['A']
     yFirst = yKeys ++ xKeys ++ ['A']
 
-buildOptionsMap :: Grid -> M.Map (Char, Char) [Inputs]
-buildOptionsMap grid = M.fromList $ map (\pair -> (pair, computeOptions grid pair)) pairs
+xDeltaToKeyPresses :: Int -> Inputs
+xDeltaToKeyPresses delta = replicate (abs delta) key
+  where
+    key = if delta < 0 then '<' else '>'
+
+yDeltaToKeyPresses :: Int -> Inputs
+yDeltaToKeyPresses delta = replicate (abs delta) key
+  where
+    key = if delta < 0 then '^' else 'v'
+
+buildOptionsMap :: Grid -> M.Map (Char, Char) Inputs
+buildOptionsMap grid = M.fromList $ map (\pair -> (pair, computeOption grid pair)) pairs
   where
     keys = filter (/='.') $ M.elems grid
     pairs = concatMap (keyPairs keys) keys
@@ -123,4 +126,4 @@ part1 :: [String] -> Int
 part1 codes = sum $ map (complexity 2) codes
 
 part2 :: [String] -> Int
-part2 codes = shortestButtonPressSequence 7 "029A"
+part2 codes = shortestButtonPressSequence 10 "029A"
