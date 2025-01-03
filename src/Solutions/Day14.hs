@@ -9,10 +9,10 @@ import Common.AoCSolutions
   )
 import Common.Geometry
 import Common.ListUtils
-import Data.Map as M (Map, map, fromList)
+import Data.Map as M (map)
+import qualified Data.Set as S
 import Linear (V2 (..))
 import Text.Trifecta (CharParsing (string), Parser, TokenParsing (token), integer, some)
-import Common.Debugging
 
 type Velocity = Point
 
@@ -39,10 +39,12 @@ parseRobot = do
   v_y <- string "," *> integer
   pure $ Robot (V2 (fromInteger x) (fromInteger y)) (V2 (fromInteger v_x) (fromInteger v_y))
 
-
 width = 101
+
 height = 103
+
 xMid = width `div` 2
+
 yMid = height `div` 2
 
 part1 :: [Robot] -> Int
@@ -51,8 +53,8 @@ part1 = product . M.map length . associateBy getQuadrant . filter hasQuadrant . 
 part2 :: [Robot] -> Int
 part2 = findPicture 0
 
-makeMap :: [Robot] -> Grid
-makeMap robots = M.fromList $ [(position, '*') | (Robot position _) <- robots]
+-- makeMap :: [Robot] -> Grid
+-- makeMap robots = M.fromList $ [(position, '*') | (Robot position _) <- robots]
 
 moveNTimes :: Int -> [Robot] -> [Robot]
 moveNTimes 0 robots = robots
@@ -61,23 +63,32 @@ moveNTimes n robots = moveNTimes (n - 1) newRobots
     newRobots = moveRobots robots
 
 findPicture :: Int -> [Robot] -> Int
-findPicture n robots = if picturePotential then n+1 else findPicture (n+1) newRobots
--- findPicture n robots = if picturePotential then traceVectorMap (makeMap newRobots) n+1 else findPicture (n+1) newRobots
+-- findPicture n robots = if containsTriangle newRobots then traceVectorMap (makeMap newRobots) n+1 else findPicture (n+1) newRobots
+findPicture n robots = if containsTriangle newRobots then n + 1 else findPicture (n + 1) newRobots
   where
     newRobots = moveRobots robots
-    picturePotential = averageNeighbours newRobots > 1
+
+-- Look for an arrangement of robots like:
+--
+--   X
+--  XXX
+-- XXXXX
+--
+containsTriangle :: [Robot] -> Bool
+containsTriangle robots = any (topOfTriangle pts) pts
+  where
+    pts = S.fromList $ Prelude.map position robots
+
+topOfTriangle :: S.Set Position -> Position -> Bool
+topOfTriangle robots (V2 x y) = all (`S.member` robots) (lineOne ++ lineTwo)
+  where
+    lineOne = Prelude.map (\xDiff -> V2 (x + xDiff) y + 1) [-1, 0, 1]
+    lineTwo = Prelude.map (\xDiff -> V2 (x + xDiff) y + 2) [-2, -1, 0, 1, 2]
 
 moveRobots :: [Robot] -> [Robot]
 moveRobots = Prelude.map moveRobot
 
-averageNeighbours :: [Robot] -> Int
-averageNeighbours robots = sum neighbours `div` length neighbours
-  where 
-    positions = Prelude.map position robots
-    robotMap = makeMap robots
-    neighbours = Prelude.map (length . gridNeighbours robotMap) positions
-
-moveRobot ::  Robot -> Robot
+moveRobot :: Robot -> Robot
 moveRobot (Robot position velocity) = Robot (wrapAround $ position + velocity) velocity
 
 wrapAround :: Position -> Position

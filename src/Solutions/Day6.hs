@@ -5,7 +5,7 @@ where
 
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
-    printSolutions, printTestSolutions,
+    printSolutions,
   )
 import Common.Geometry
 import Control.Lens ((^.))
@@ -14,8 +14,6 @@ import qualified Data.Map as M
 import Data.Set as S
 import Linear.V2 (R1 (_x), R2 (_y), V2 (..))
 import Text.Trifecta (Parser, anyChar, many)
-import Debug.Trace (traceShow)
-
 
 data Guard = Guard {position :: Position, direction :: Direction}
   deriving (Show, Eq, Ord)
@@ -43,8 +41,8 @@ makeAllMoves move g guards guard
     newTile = lookupTile g (position newGuard)
 
 makeSingleMove :: Grid -> Guard -> Guard
-makeSingleMove grid guard 
-  | lookupTile grid newPosition == '#' = Guard (position guard) (rotate $ direction guard) 
+makeSingleMove grid guard
+  | lookupTile grid newPosition == '#' = Guard (position guard) (rotate $ direction guard)
   | otherwise = Guard newPosition (direction guard)
   where
     newPosition = position guard + direction guard
@@ -52,10 +50,10 @@ makeSingleMove grid guard
 -- For part 2 we don't need to track the full history, so we "leap" from obstacle to obstacle rather than taking one step at a time
 moveToNextObstacle :: Grid -> Guard -> Guard
 moveToNextObstacle grid (Guard position direction)
-  | lookupTile grid nextObstacle == '#' = Guard (nextObstacle - direction) (rotate direction) 
+  | lookupTile grid nextObstacle == '#' = Guard (nextObstacle - direction) (rotate direction)
   | otherwise = Guard nextObstacle direction
   where
-    pathInFront = iterate (+ direction) (position+direction)
+    pathInFront = iterate (+ direction) (position + direction)
     nextObstacle = head $ L.filter ((/= '.') . lookupTile grid) pathInFront
 
 lookupTile :: Grid -> Position -> Char
