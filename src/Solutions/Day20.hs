@@ -6,7 +6,6 @@ where
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
-    printTestSolutions,
   )
 import Common.Geometry
 import qualified Data.Map as M
@@ -20,8 +19,8 @@ data RaceState = RaceState {visited :: M.Map Position Int, walls :: Set Position
 
 aoc20 :: IO ()
 aoc20 = do
-  printSolutions 20 $ MkAoCSolution parseInput part1
-  printSolutions 20 $ MkAoCSolution parseInput part2
+  printSolutions 20 'A' $ MkAoCSolution parseInput part1
+  printSolutions 20 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser Grid
 parseInput = enumerateMultilineStringToVectorMap <$> many anyChar

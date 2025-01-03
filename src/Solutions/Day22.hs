@@ -3,7 +3,6 @@ module Solutions.Day22 where
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
-    printTestSolutions,
   )
 import Data.Bits (xor)
 import Text.Trifecta (Parser, anyChar, integer, many, some, token)
@@ -14,8 +13,8 @@ import Debug.Trace (traceShow)
 
 aoc22 :: IO ()
 aoc22 = do
-  printTestSolutions 22 $ MkAoCSolution parseInput part1
-  printSolutions 22 $ MkAoCSolution parseInput part2
+  printSolutions 22 'A' $ MkAoCSolution parseInput part1
+  printSolutions 22 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser [Integer]
 parseInput = some $ token integer
@@ -41,7 +40,7 @@ part2 :: [Integer] -> Int
 part2 = maximum . M.elems . foldl updateDeltaMap M.empty
 
 updateDeltaMap :: M.Map [Int] Int -> Integer -> M.Map [Int] Int
-updateDeltaMap mapSoFar secretNumber = traceShow secretNumber $ M.unionWith (+) mapSoFar newMap
+updateDeltaMap mapSoFar secretNumber = M.unionWith (+) mapSoFar newMap
   where
     newMap = makeDeltaMap 2000 (fromInteger secretNumber)
 

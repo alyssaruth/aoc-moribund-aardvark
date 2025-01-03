@@ -6,7 +6,6 @@ module Solutions.Day24 where
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
-    printTestSolutions,
   )
 import Control.Exception (SomeException)
 import Control.Lens (imap)
@@ -30,8 +29,8 @@ data WireEquation = WireEquation {leftWire :: Wire, rightWire :: Wire, operation
 
 aoc24 :: IO ()
 aoc24 = do
-  printSolutions 24 $ MkAoCSolution parseInput part1
-  printSolutions 24 $ MkAoCSolution parseInput part2
+  printSolutions 24 'A' $ MkAoCSolution parseInput part1
+  printSolutions 24 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser (M.Map Wire Int, [WireEquation])
 parseInput = do

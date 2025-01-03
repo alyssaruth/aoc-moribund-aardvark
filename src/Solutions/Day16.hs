@@ -5,7 +5,7 @@ where
 
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
-    printSolutions, printTestSolutions,
+    printSolutions,
   )
 import Text.Trifecta (Parser, many, CharParsing (anyChar))
 import Common.Geometry
@@ -17,8 +17,8 @@ data Route = Route{visited :: Set Position, score :: Int, position :: Position, 
 
 aoc16 :: IO ()
 aoc16 = do
-  printSolutions 16 $ MkAoCSolution parseInput part1
-  printSolutions 16 $ MkAoCSolution parseInput part2
+  printSolutions 16 'A' $ MkAoCSolution parseInput part1
+  printSolutions 16 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser Grid
 parseInput = enumerateMultilineStringToVectorMap <$> many anyChar

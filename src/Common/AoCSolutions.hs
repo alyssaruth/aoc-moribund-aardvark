@@ -13,6 +13,7 @@ import           Text.Trifecta              (ErrInfo, Parser, Result,
 import           Text.Trifecta.Parser       (parseString)
 import           Web.AoCUtils               (ConfigError, getPuzzleInput,
                                              getTestPuzzleInput)
+import System.TimeIt (timeIt)
 
 data AoCSolution a b =
   MkAoCSolution
@@ -28,22 +29,22 @@ data SolutionError
   deriving (Show)
 
 printSolutions' ::
-     (Show b) => Integer -> GetPuzzleInput -> AoCSolution a b -> IO ()
-printSolutions' day puzzleInputFun (MkAoCSolution parser part1) = do
+     (Show b) => Integer -> Char -> GetPuzzleInput -> AoCSolution a b -> IO ()
+printSolutions' day part puzzleInputFun (MkAoCSolution parser part1) = do
   result <-
     runExceptT $ do
       input <- withExceptT MkConfigError $ puzzleInputFun day
       parsed <- except $ resultToEither $ parseString parser mempty input
       lift $ do
-        putStrLn "Solution:"
+        putStr (show day ++ [part] ++ ": ")
         print $ part1 parsed
   either print return result
 
-printSolutions :: (Show b) => Integer -> AoCSolution a b -> IO ()
-printSolutions = flip printSolutions' getPuzzleInput
+printSolutions :: (Show b) => Integer -> Char -> AoCSolution a b -> IO ()
+printSolutions day part = printSolutions' day part getPuzzleInput
 
-printTestSolutions :: (Show b) => Integer -> AoCSolution a b -> IO ()
-printTestSolutions = flip printSolutions' getTestPuzzleInput
+printTestSolutions :: (Show b) => Integer -> Char -> AoCSolution a b -> IO ()
+printTestSolutions day part = printSolutions' day part getTestPuzzleInput
 
 resultToEither :: Result a -> Either SolutionError a
 resultToEither = foldResult (Left . MKParseError) Right

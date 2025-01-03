@@ -6,7 +6,6 @@ where
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
-    printTestSolutions,
   )
 import Common.Geometry
 import Common.ListUtils (associateBy, window2)
@@ -23,8 +22,8 @@ type Line = [Point]
 
 aoc12 :: IO ()
 aoc12 = do
-  printSolutions 12 $ MkAoCSolution parseInput part1
-  printSolutions 12 $ MkAoCSolution parseInput part2
+  printSolutions 12 'A' $ MkAoCSolution parseInput part1
+  printSolutions 12 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser Grid
 parseInput = enumerateMultilineStringToVectorMap <$> many anyChar

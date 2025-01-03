@@ -3,7 +3,6 @@ module Solutions.Day23 (aoc23) where
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
-    printTestSolutions,
   )
 import Data.List (intercalate, intersect, isPrefixOf, nub)
 import qualified Data.Map as M
@@ -14,8 +13,8 @@ type Computer = String
 
 aoc23 :: IO ()
 aoc23 = do
-  printSolutions 23 $ MkAoCSolution parseInput part1
-  printSolutions 23 $ MkAoCSolution parseInput part2
+  printSolutions 23 'A' $ MkAoCSolution parseInput part1
+  printSolutions 23 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser [(Computer, Computer)]
 parseInput = do

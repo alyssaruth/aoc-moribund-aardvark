@@ -20,8 +20,8 @@ data CubeGame = CubeGame { gameId :: Integer, rounds :: [CubeRound] }
 
 aoc2practice :: IO ()
 aoc2practice = do
-  printSolutions 2 $ MkAoCSolution parseInput part1
-  printSolutions 2 $ MkAoCSolution parseInput part2
+  printSolutions 2 'A' $ MkAoCSolution parseInput part1
+  printSolutions 2 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser [CubeGame]
 parseInput = some $ parseGame <* newline

@@ -24,8 +24,8 @@ type AntiNodeChecker = Point -> [Point] -> Bool
 
 aoc8 :: IO ()
 aoc8 = do
-  printSolutions 8 $ MkAoCSolution parseInput part1
-  printSolutions 8 $ MkAoCSolution parseInput part2
+  printSolutions 8 'A' $ MkAoCSolution parseInput part1
+  printSolutions 8 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser Grid
 parseInput = enumerateMultilineStringToVectorMap <$> many anyChar

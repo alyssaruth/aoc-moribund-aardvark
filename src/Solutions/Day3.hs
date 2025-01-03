@@ -6,7 +6,6 @@ where
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
-    printTestSolutions,
   )
 import Common.ListUtils (window2, windowN)
 import Data.List (elemIndices, sort)
@@ -16,8 +15,8 @@ import Text.Trifecta (CharParsing (anyChar), Parser)
 
 aoc3 :: IO ()
 aoc3 = do
-  printSolutions 3 $ MkAoCSolution parseInput part1
-  printSolutions 3 $ MkAoCSolution parseInput part2
+  printSolutions 3 'A' $ MkAoCSolution parseInput part1
+  printSolutions 3 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser String
 parseInput = many anyChar

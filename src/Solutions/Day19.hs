@@ -6,7 +6,6 @@ where
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
-    printTestSolutions,
   )
 import Data.List (isPrefixOf)
 import qualified Data.Map as M
@@ -21,8 +20,8 @@ type Design = [Char]
 
 aoc19 :: IO ()
 aoc19 = do
-  printSolutions 19 $ MkAoCSolution parseInput part1
-  printSolutions 19 $ MkAoCSolution parseInput part2
+  printSolutions 19 'A' $ MkAoCSolution parseInput part1
+  printSolutions 19 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser ([Towel], [Design])
 parseInput = do

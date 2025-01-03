@@ -6,7 +6,6 @@ where
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
-    printTestSolutions,
   )
 import Common.ListUtils (associateBy)
 import Data.List (genericLength)
@@ -17,8 +16,8 @@ type Stones = M.Map Integer Integer
 
 aoc11 :: IO ()
 aoc11 = do
-  printSolutions 11 $ MkAoCSolution parseInput part1
-  printSolutions 11 $ MkAoCSolution parseInput part2
+  printSolutions 11 'A' $ MkAoCSolution parseInput part1
+  printSolutions 11 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser [Integer]
 parseInput = sepBy integer' (char ' ')

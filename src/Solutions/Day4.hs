@@ -6,7 +6,6 @@ where
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
-    printTestSolutions,
   )
 import Common.Geometry
 import Control.Lens ((^.))
@@ -21,8 +20,8 @@ type Line = [Point]
 
 aoc4 :: IO ()
 aoc4 = do
-  printSolutions 4 $ MkAoCSolution parseInput part1
-  printSolutions 4 $ MkAoCSolution parseInput part2
+  printSolutions 4 'A' $ MkAoCSolution parseInput part1
+  printSolutions 4 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser Grid
 parseInput = enumerateMultilineStringToVectorMap <$> many anyChar

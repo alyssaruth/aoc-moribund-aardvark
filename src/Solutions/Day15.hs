@@ -3,7 +3,6 @@ module Solutions.Day15 where
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
-    printTestSolutions,
   )
 import Common.Geometry
 import Control.Lens ((^.))
@@ -21,8 +20,8 @@ data MoveResult = MoveResult {affectedBoxes :: Set Box, hitWall :: Bool}
 
 aoc15 :: IO ()
 aoc15 = do
-  printSolutions 15 $ MkAoCSolution parseInput part1
-  printSolutions 15 $ MkAoCSolution parseInput part2
+  printSolutions 15 'A' $ MkAoCSolution parseInput part1
+  printSolutions 15 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser (Grid, [Point])
 parseInput = do

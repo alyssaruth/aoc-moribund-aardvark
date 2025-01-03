@@ -14,8 +14,8 @@ type Solution = (Integer, Integer)
 
 aoc13 :: IO ()
 aoc13 = do
-  printSolutions 13 $ MkAoCSolution parseInput part1
-  printSolutions 13 $ MkAoCSolution parseInput part2
+  printSolutions 13 'A' $ MkAoCSolution parseInput part1
+  printSolutions 13 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser [SimultaneousEquations]
 parseInput = do

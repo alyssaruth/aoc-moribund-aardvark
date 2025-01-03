@@ -5,7 +5,6 @@ module Solutions.Day21 where
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
-    printTestSolutions,
   )
 import Common.Geometry
 import Common.ListUtils (window2)
@@ -26,8 +25,8 @@ data KeypadCache = KeypadCache {depth :: Int, costMap :: M.Map (Char, Char) Int}
 
 aoc21 :: IO ()
 aoc21 = do
-  printSolutions 21 $ MkAoCSolution parseInput part1
-  printSolutions 21 $ MkAoCSolution parseInput part2
+  printSolutions 21 'A' $ MkAoCSolution parseInput part1
+  printSolutions 21 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser [String]
 parseInput = some $ token $ some alphaNum

@@ -92,6 +92,7 @@ library
     , split
     , text
     , text-format
+    , timeit >=2.0
     , transformers
     , trifecta
   default-language: Haskell2010
@@ -125,6 +126,7 @@ executable aoc-moribund-aardvark-exe
     , split
     , text
     , text-format
+    , timeit >=2.0
     , transformers
     , trifecta
   default-language: Haskell2010
@@ -159,6 +161,7 @@ test-suite aoc-moribund-aardvark-test
     , split
     , text
     , text-format
+    , timeit >=2.0
     , transformers
     , trifecta
   default-language: Haskell2010

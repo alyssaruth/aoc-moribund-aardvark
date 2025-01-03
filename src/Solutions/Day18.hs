@@ -6,7 +6,6 @@ where
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
-    printTestSolutions,
   )
 import Common.Geometry
 import Common.ListUtils (associateBy)
@@ -30,8 +29,8 @@ goal = V2 width height
 
 aoc18 :: IO ()
 aoc18 = do
-  printSolutions 18 $ MkAoCSolution parseInput part1
-  printSolutions 18 $ MkAoCSolution parseInput part2
+  printSolutions 18 'A' $ MkAoCSolution parseInput part1
+  printSolutions 18 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser [Point]
 parseInput = do

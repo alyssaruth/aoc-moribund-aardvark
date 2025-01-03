@@ -6,7 +6,6 @@ where
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
-    printTestSolutions,
   )
 import Common.Geometry
 import Data.Char (digitToInt, intToDigit)
@@ -18,8 +17,8 @@ type Path = [Point]
 
 aoc10 :: IO ()
 aoc10 = do
-  printSolutions 10 $ MkAoCSolution parseInput part1
-  printSolutions 10 $ MkAoCSolution parseInput part2
+  printSolutions 10 'A' $ MkAoCSolution parseInput part1
+  printSolutions 10 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser Grid
 parseInput = enumerateMultilineStringToVectorMap <$> many anyChar

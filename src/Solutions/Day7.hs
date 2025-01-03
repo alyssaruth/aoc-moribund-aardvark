@@ -13,8 +13,8 @@ type Operation = Integer -> Integer -> Integer
 
 aoc7 :: IO ()
 aoc7 = do
-  printSolutions 7 $ MkAoCSolution parseInput part1
-  printSolutions 7 $ MkAoCSolution parseInput part2
+  printSolutions 7 'A' $ MkAoCSolution parseInput part1
+  printSolutions 7 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser [Equation]
 parseInput = do

@@ -6,7 +6,6 @@ where
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
-    printTestSolutions,
   )
 import Common.Geometry
 import Common.ListUtils
@@ -25,8 +24,8 @@ data Quadrant = TL | TR | BL | BR
 
 aoc14 :: IO ()
 aoc14 = do
-  printSolutions 14 $ MkAoCSolution parseInput part1
-  printSolutions 14 $ MkAoCSolution parseInput part2
+  printSolutions 14 'A' $ MkAoCSolution parseInput part1
+  printSolutions 14 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser [Robot]
 parseInput = do
@@ -62,7 +61,8 @@ moveNTimes n robots = moveNTimes (n - 1) newRobots
     newRobots = moveRobots robots
 
 findPicture :: Int -> [Robot] -> Int
-findPicture n robots = if picturePotential then traceVectorMap (makeMap newRobots) n+1 else findPicture (n+1) newRobots
+findPicture n robots = if picturePotential then n+1 else findPicture (n+1) newRobots
+-- findPicture n robots = if picturePotential then traceVectorMap (makeMap newRobots) n+1 else findPicture (n+1) newRobots
   where
     newRobots = moveRobots robots
     picturePotential = averageNeighbours newRobots > 1

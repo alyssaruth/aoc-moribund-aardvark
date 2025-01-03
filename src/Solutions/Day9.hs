@@ -3,7 +3,6 @@ module Solutions.Day9 where
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
-    printTestSolutions,
   )
 import Common.ListUtils (mapIf)
 import qualified Common.MapUtils as S
@@ -24,8 +23,8 @@ data DiskState = DiskState {diskMap :: DiskMap, gapGroups :: [[Int]]}
 
 aoc9 :: IO ()
 aoc9 = do
-  printSolutions 9 $ MkAoCSolution parseInput part1
-  printSolutions 9 $ MkAoCSolution parseInput part2
+  printSolutions 9 'A' $ MkAoCSolution parseInput part1
+  printSolutions 9 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser String
 parseInput = many anyChar

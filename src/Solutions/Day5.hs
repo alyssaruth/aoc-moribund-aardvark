@@ -22,8 +22,8 @@ import Text.Trifecta
 
 aoc5 :: IO ()
 aoc5 = do
-  printSolutions 5 $ MkAoCSolution parseInput part1
-  printSolutions 5 $ MkAoCSolution parseInput part2
+  printSolutions 5 'A' $ MkAoCSolution parseInput part1
+  printSolutions 5 'B' $ MkAoCSolution parseInput part2
 
 type Page = [Integer]
 

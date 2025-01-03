@@ -1,17 +1,24 @@
 module Solutions.Day1
-  ( aoc1practice
-  ) where
+  ( aoc1practice,
+  )
+where
 
-import           Common.AoCSolutions (AoCSolution (MkAoCSolution),
-                                      printSolutions, printTestSolutions)
-import           Data.Char           (isDigit)
-import           Text.Trifecta       (Parser, TokenParsing (token), alphaNum,
-                                      some)
+import Common.AoCSolutions
+  ( AoCSolution (MkAoCSolution),
+    printSolutions,
+  )
+import Data.Char (isDigit)
+import Text.Trifecta
+  ( Parser,
+    TokenParsing (token),
+    alphaNum,
+    some,
+  )
 
 aoc1practice :: IO ()
 aoc1practice = do
-  printSolutions 1 $ MkAoCSolution parseInput part1
-  printSolutions 1 $ MkAoCSolution parseInput part2
+  printSolutions 1 'A' $ MkAoCSolution parseInput part1
+  printSolutions 1 'B' $ MkAoCSolution parseInput part2
 
 type CalibrationLines = [String]
 
@@ -36,19 +43,18 @@ lastNumber = firstNumber . reverse
 
 validNumbers :: String -> String
 validNumbers [] = ""
-validNumbers l@(x:xs)
-    | isDigit x = [x] ++ validNumbers xs
-    | otherwise = (parseStringNum l) ++ (validNumbers xs)
+validNumbers l@(x : xs)
+  | isDigit x = x : validNumbers xs
+  | otherwise = parseStringNum l ++ validNumbers xs
 
 parseStringNum :: String -> String
-parseStringNum ('o':'n':'e':things) = ['1']
-parseStringNum ('t':'w':'o':stuff) = ['2']
-parseStringNum ('t':'h':'r':'e':'e':rubbish) = ['3']
-parseStringNum ('f':'o':'u':'r':remainder) = ['4']
-parseStringNum ('f':'i':'v':'e':gubbins) = ['5']
-parseStringNum ('s':'i':'x':doodad) = ['6']
-parseStringNum ('s':'e':'v':'e':'n':mcguffin) = ['7']
-parseStringNum ('e':'i':'g':'h':'t':junk) = ['8']
-parseStringNum ('n':'i':'n':'e':remnants) = ['9']
+parseStringNum ('o' : 'n' : 'e' : things) = ['1']
+parseStringNum ('t' : 'w' : 'o' : stuff) = ['2']
+parseStringNum ('t' : 'h' : 'r' : 'e' : 'e' : rubbish) = ['3']
+parseStringNum ('f' : 'o' : 'u' : 'r' : remainder) = ['4']
+parseStringNum ('f' : 'i' : 'v' : 'e' : gubbins) = ['5']
+parseStringNum ('s' : 'i' : 'x' : doodad) = ['6']
+parseStringNum ('s' : 'e' : 'v' : 'e' : 'n' : mcguffin) = ['7']
+parseStringNum ('e' : 'i' : 'g' : 'h' : 't' : junk) = ['8']
+parseStringNum ('n' : 'i' : 'n' : 'e' : remnants) = ['9']
 parseStringNum x = []
-

@@ -3,7 +3,6 @@ module Solutions.Day2 where
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
-    printTestSolutions,
   )
 import Common.ListUtils (window2)
 import Data.Ix (inRange)
@@ -19,8 +18,8 @@ import Text.Trifecta
 
 aoc2 :: IO ()
 aoc2 = do
-  printSolutions 2 $ MkAoCSolution parseInput part1
-  printSolutions 2 $ MkAoCSolution parseInput part2
+  printSolutions 2 'A' $ MkAoCSolution parseInput part1
+  printSolutions 2 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser [[Integer]]
 parseInput = do
