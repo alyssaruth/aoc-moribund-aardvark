@@ -21,6 +21,7 @@ import Debug.Trace (traceShow)
 import Numeric (showIntAtBase)
 import Text.Parser.Char (alphaNum)
 import Text.Trifecta (Parser, integer, letter, many, some, string, token, try)
+import Common.BinaryUtils (pad0)
 
 type Wire = String
 
@@ -121,6 +122,7 @@ fixDepth equations depth wiresPreviouslySwapped = traceShow ("Swapped wires " ++
     fixedMachine = performSwap equations correctSwap
 
 -- If we've failed at depth N, then we know that x0...xn-1, y0...yn-1 and z0...zn-1 are wired up right already
+-- Likewise, anything immediately connected to x0...xn-2 and y0...yn-2, because even remainders of these are definitely working
 -- We also know we can ignore any wires we've already swapped
 swappableWires :: [WireEquation] -> Int -> [Wire] -> [WireEquation]
 swappableWires equations failedDepth wiresPreviouslySwapped = filter (not . includesWires allWires) equations
@@ -128,7 +130,8 @@ swappableWires equations failedDepth wiresPreviouslySwapped = filter (not . incl
     xWires = map (makeWire "x") [0 .. (failedDepth - 1)]
     yWires = map (makeWire "y") [0 .. (failedDepth - 1)]
     zWires = map (makeWire "z") [0 .. (failedDepth - 1)]
-    allWires = xWires ++ yWires ++ zWires ++ wiresPreviouslySwapped
+    connectedToSafeWires = map destinationWire $ filter (includesWires (init xWires ++ init yWires)) equations
+    allWires = xWires ++ yWires ++ zWires ++ wiresPreviouslySwapped ++ connectedToSafeWires
 
 includesWires :: [Wire] -> WireEquation -> Bool
 includesWires wires (WireEquation leftWire rightWire _ destinationWire) = leftWire `elem` wires || rightWire `elem` wires || destinationWire `elem` wires
@@ -186,13 +189,11 @@ prepareTestSums depth =
 getSimpleSums :: Int -> [(Int, Int)]
 getSimpleSums depth
   | maxValue - minValue <= maxSums = map (\x -> (minValue, x)) [0 .. maxValue - minValue]
-  | otherwise = firstHalf ++ secondHalf
+  | otherwise = map (\x -> (minValue, x)) [0 .. (maxSums `div` 2)]
   where
     maxSums = 20
     minValue = 2 ^ depth
     maxValue = 2 ^ (depth + 1) - 1
-    firstHalf = map (\x -> (minValue, x)) [0 .. (maxSums `div` 2)]
-    secondHalf = map (\x -> (minValue, x)) [maxValue - minValue - (maxSums `div` 2) .. maxValue - minValue]
 
 -- Set up inputs for X and Y to perform a specific addition
 performAddition :: [WireEquation] -> Int -> Int -> Maybe Int
@@ -215,7 +216,7 @@ prepareWires prefix maxDepth binaryValue = M.fromList newValues
     newValues = map (\key -> (key, getNewValue binaryValue key)) keys
 
 makeWire :: String -> Int -> Wire
-makeWire prefix n = prefix ++ replicate (2 - length (show n)) '0' ++ show n
+makeWire prefix n = prefix ++ pad0 2 (show n)
 
 getNewValue :: String -> Wire -> Int
 getNewValue binaryValue wire
