@@ -27,7 +27,7 @@ import Solutions.Day7 (aoc7)
 import Solutions.Day8 (aoc8)
 import Solutions.Day9 (aoc9)
 import Data.Void (Void)
-import System.TimeIt (timeIt)
+import System.TimeIt (timeIt, timeItNamed)
 
 funs =
   [ aoc1,
@@ -59,7 +59,7 @@ funs =
 
 main :: IO ()
 main = do
-  timeIt $ runSolutions funs
+  timeItNamed "********\nOVERALL TIME" $ runSolutions funs
 
 runSolutions :: [ IO ()] -> IO ()
 runSolutions fns
