@@ -5,7 +5,7 @@ where
 
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
-    printSolutions,
+    printSolutions, printTestSolutions,
   )
 import Common.Geometry
 import Control.Lens ((^.))
@@ -14,12 +14,16 @@ import qualified Data.Map as M
 import Data.Set as S
 import Linear.V2 (R1 (_x), R2 (_y), V2 (..))
 import Text.Trifecta (Parser, anyChar, many)
+import Debug.Trace (traceShow)
 
 
 data Guard = Guard {position :: Position, direction :: Direction}
   deriving (Show, Eq, Ord)
 
 data PatrolResult = PatrolResult {history :: Set Guard, looped :: Bool}
+  deriving (Show)
+
+type MovementFn = Grid -> Guard -> Guard
 
 aoc6 :: IO ()
 aoc6 = do
@@ -29,20 +33,33 @@ aoc6 = do
 parseInput :: Parser Grid
 parseInput = enumerateMultilineStringToVectorMap <$> many anyChar
 
-makeAllMoves :: Grid -> Set Guard -> Guard -> PatrolResult
-makeAllMoves g guards guard
+makeAllMoves :: MovementFn -> Grid -> Set Guard -> Guard -> PatrolResult
+makeAllMoves move g guards guard
   | newTile == ' ' = PatrolResult guards False
   | newGuard `member` guards = PatrolResult guards True
-  | otherwise = makeAllMoves g (S.insert newGuard guards) newGuard
+  | otherwise = makeAllMoves move g (S.insert newGuard guards) newGuard
   where
-    newGuard = makeMove g guard
-    newTile = M.findWithDefault ' ' (position newGuard) g
+    newGuard = move g guard
+    newTile = lookupTile g (position newGuard)
 
-makeMove :: Grid -> Guard -> Guard
-makeMove grid guard = if obstacle == '#' then Guard (position guard) (rotate $ direction guard) else Guard newPosition (direction guard)
+makeSingleMove :: Grid -> Guard -> Guard
+makeSingleMove grid guard 
+  | lookupTile grid newPosition == '#' = Guard (position guard) (rotate $ direction guard) 
+  | otherwise = Guard newPosition (direction guard)
   where
     newPosition = position guard + direction guard
-    obstacle = M.findWithDefault ' ' newPosition grid
+
+-- For part 2 we don't need to track the full history, so we "leap" from obstacle to obstacle rather than taking one step at a time
+moveToNextObstacle :: Grid -> Guard -> Guard
+moveToNextObstacle grid (Guard position direction)
+  | lookupTile grid nextObstacle == '#' = Guard (nextObstacle - direction) (rotate direction) 
+  | otherwise = Guard nextObstacle direction
+  where
+    pathInFront = iterate (+ direction) (position+direction)
+    nextObstacle = head $ L.filter ((/= '.') . lookupTile grid) pathInFront
+
+lookupTile :: Grid -> Position -> Char
+lookupTile grid position = M.findWithDefault ' ' position grid
 
 rotate :: Direction -> Direction
 rotate d = V2 (-(d ^. _y)) (d ^. _x)
@@ -50,21 +67,21 @@ rotate d = V2 (-(d ^. _y)) (d ^. _x)
 findGuard :: Grid -> Position
 findGuard = head . M.keys . M.filter (== '^')
 
-processGrid :: Grid -> PatrolResult
-processGrid g = makeAllMoves g (S.singleton initialGuard) initialGuard
+processGrid :: MovementFn -> Grid -> PatrolResult
+processGrid moveFn g = makeAllMoves moveFn g (S.singleton initialGuard) initialGuard
   where
     initialGuard = Guard (findGuard g) (V2 0 (-1))
 
 part1 :: Grid -> Int
-part1 = length . S.map position . history . processGrid
+part1 = length . S.map position . history . processGrid makeSingleMove
 
 generateNewGrids :: Grid -> [Grid]
 generateNewGrids g = L.map (addObstacle g) positions
   where
-    positions = L.delete (findGuard g) $ S.toList $ S.map position $ history $ processGrid g
+    positions = L.delete (findGuard g) $ S.toList $ S.map position $ history $ processGrid makeSingleMove g
 
 addObstacle :: Grid -> Position -> Grid
 addObstacle g p = M.insert p '#' g
 
 part2 :: Grid -> Int
-part2 = length . L.filter (looped . processGrid) . generateNewGrids
+part2 = length . L.filter (looped . processGrid moveToNextObstacle) . generateNewGrids
