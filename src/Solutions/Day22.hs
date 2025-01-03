@@ -4,15 +4,13 @@ import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
   )
-import Data.Bits (xor, Bits (shiftL, shiftR))
-import Text.Trifecta (Parser, anyChar, integer, many, some, token)
-import qualified Data.Map as M
 import Common.ListUtils (window2, windowN)
-import Control.Lens (imap)
-import Debug.Trace (traceShow)
-import Data.List (sort)
+import Data.Bits (Bits (shiftL, shiftR), xor)
+import Data.Hashable (hash)
+import qualified Data.Map as M
+import Text.Trifecta (Parser, anyChar, integer, some, token)
 
-pruneBase = 2^24
+pruneBase = 2 ^ 24
 
 aoc22 :: IO ()
 aoc22 = do
@@ -22,45 +20,44 @@ aoc22 = do
 parseInput :: Parser [Integer]
 parseInput = some $ token integer
 
-part1 :: [Integer] -> Int
-part1 = sum . map (getNthEvolution 2000 . fromInteger)
+part1 :: [Integer] -> Integer
+part1 = sum . map (getNthEvolution 2000)
 
-getNthEvolution :: Int -> Int -> Int
+getNthEvolution :: Int -> Integer -> Integer
 getNthEvolution n num = iterate evolveSecretNumber num !! n
 
-evolveSecretNumber :: Int -> Int
+evolveSecretNumber :: Integer -> Integer
 evolveSecretNumber = stepThree . stepTwo . stepOne
   where
     stepOne x = mixAndPrune x (x `shiftL` 6)
     stepTwo x = mix x (x `shiftR` 5) -- Prune unnecessary as the number is getting smaller
     stepThree x = mixAndPrune x (x `shiftL` 11)
 
-mixAndPrune :: Int -> Int -> Int
+mixAndPrune :: Integer -> Integer -> Integer
 mixAndPrune secretNumber newValue = mix secretNumber newValue `mod` pruneBase
 
-mix :: Int -> Int -> Int
+mix :: Integer -> Integer -> Integer
 mix secretNumber newValue = secretNumber `xor` newValue
 
-part2 :: [Integer] -> Int
+part2 :: [Integer] -> Integer
 part2 = maximum . M.elems . foldl updateDeltaMap M.empty
 
-updateDeltaMap :: M.Map [Int] Int -> Integer -> M.Map [Int] Int
-updateDeltaMap mapSoFar secretNumber = unioned
+updateDeltaMap :: M.Map Int Integer -> Integer -> M.Map Int Integer
+updateDeltaMap mapSoFar secretNumber = M.unionWith (+) mapSoFar newMap
   where
     newMap = makeDeltaMap 2000 (fromInteger secretNumber)
-    unioned = M.unionWith (+) mapSoFar newMap
 
-makeDeltaMap :: Int -> Int -> M.Map [Int] Int
+makeDeltaMap :: Int -> Integer -> M.Map Int Integer
 makeDeltaMap n secretNumber = M.fromList $ reverse zipped
   where
     priceSequence = makePriceSequence n secretNumber
     differences = map (uncurry (flip (-))) $ window2 priceSequence
-    zipped = zip (windowN 4 differences) (drop 4 priceSequence)
+    zipped = zip (map hash (windowN 4 differences)) (drop 4 priceSequence)
 
-makePriceSequence :: Int -> Int -> [Int]
+makePriceSequence :: Int -> Integer -> [Integer]
 makePriceSequence n secretNumber = priceSequence (n - 1) secretNumber [secretNumber `mod` 10]
 
-priceSequence :: Int -> Int -> [Int] -> [Int]
+priceSequence :: Int -> Integer -> [Integer] -> [Integer]
 priceSequence n secretNumber pricesSoFar
   | n == 0 = pricesSoFar
   | otherwise = priceSequence (n - 1) next (pricesSoFar ++ [nextDigit])

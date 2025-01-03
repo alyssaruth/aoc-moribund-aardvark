@@ -43,6 +43,8 @@ dependencies:
 - parsers
 - regex-tdfa
 - timeit >= 2.0
+- hashable
+- parallel
 
 library:
   source-dirs: src

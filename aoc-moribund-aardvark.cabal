@@ -80,11 +80,13 @@ library
     , directory
     , dotenv
     , finite-typelits
+    , hashable
     , lens
     , linear
     , monad-extras
     , monad-loops
     , mtl
+    , parallel
     , parser-combinators
     , parsers
     , regex-tdfa
@@ -114,11 +116,13 @@ executable aoc-moribund-aardvark-exe
     , directory
     , dotenv
     , finite-typelits
+    , hashable
     , lens
     , linear
     , monad-extras
     , monad-loops
     , mtl
+    , parallel
     , parser-combinators
     , parsers
     , regex-tdfa
@@ -149,11 +153,13 @@ test-suite aoc-moribund-aardvark-test
     , directory
     , dotenv
     , finite-typelits
+    , hashable
     , lens
     , linear
     , monad-extras
     , monad-loops
     , mtl
+    , parallel
     , parser-combinators
     , parsers
     , regex-tdfa
