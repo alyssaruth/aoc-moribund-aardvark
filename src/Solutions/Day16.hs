@@ -7,13 +7,14 @@ import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
   )
-import Text.Trifecta (Parser, many, CharParsing (anyChar))
 import Common.Geometry
-import Data.Set as S ( Set, (\\), insert, null, toList, unions )
+import Common.ListUtils (associateBy)
 import qualified Data.Map as M
-import Linear (V2(..))
+import Data.Set as S (Set, insert, null, toList, unions, (\\))
+import Linear (V2 (..))
+import Text.Trifecta (CharParsing (anyChar), Parser, many)
 
-data Route = Route{visited :: Set Position, score :: Int, position :: Position, direction :: Direction}
+data Route = Route {visited :: Set Position, score :: Int, position :: Position, direction :: Direction}
 
 aoc16 :: IO ()
 aoc16 = do
@@ -29,8 +30,8 @@ startingRoute g = Route (insert position (walls g)) 0 position (V2 1 0)
     position = locate 'S' g
 
 iterateRoutes :: M.Map Position Int -> Position -> [Route] -> [Route]
-iterateRoutes scoreTable goal routes 
-  | Prelude.null unfinishedRoutes = routes 
+iterateRoutes scoreTable goal routes
+  | Prelude.null unfinishedRoutes = routes
   | otherwise = iterateRoutes newScoreTable goal prunedRoutes
   where
     unfinishedRoutes = [route | route <- routes, position route /= goal]
@@ -40,12 +41,22 @@ iterateRoutes scoreTable goal routes
 
 updateScores :: Position -> M.Map Position Int -> [Route] -> M.Map Position Int
 updateScores goal scoreTable routes = M.union (M.fromList scorePairs) scoreTable
-  where 
+  where
     unfinishedRoutes = [route | route <- routes, position route /= goal]
     scorePairs = map scorePair unfinishedRoutes
 
 pruneRoutes :: M.Map Position Int -> [Route] -> [Route]
-pruneRoutes map routes = [route | route <- routes, score route < highscore map route]
+pruneRoutes map routes = concat $ M.elems $ M.map minimumRoutes $ associateBy hashKey filtered
+  where
+    filtered = [route | route <- routes, score route < highscore map route]
+
+hashKey :: Route -> String
+hashKey route = show (position route) ++ show (direction route)
+
+minimumRoutes :: [Route] -> [Route]
+minimumRoutes routes = filter ((== minScore) . score) routes
+  where
+    minScore = minimum $ map score routes
 
 highscore :: M.Map Position Int -> Route -> Int
 highscore map route = M.findWithDefault 10000000000 (position route) map
@@ -62,7 +73,7 @@ iterateRoute goal route
     validNeighbours = allOrthogonalNeighbours (position route) \\ visited route
 
 updateRoute :: Route -> Position -> Route
-updateRoute (Route visited score position direction) newPt = Route (insert newPt visited) (score+penalty) newPt newDirection
+updateRoute (Route visited score position direction) newPt = Route (insert newPt visited) (score + penalty) newPt newDirection
   where
     newDirection = newPt - position
     penalty = computePenalty position direction newPt

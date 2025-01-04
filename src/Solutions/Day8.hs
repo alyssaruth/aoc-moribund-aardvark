@@ -10,7 +10,7 @@ import Common.AoCSolutions
 import Common.Geometry
   ( Grid,
     Point,
-    enumerateMultilineStringToVectorMap,
+    enumerateMultilineStringToVectorMap, normalize,
   )
 import Data.List
 import qualified Data.Map as M
@@ -61,8 +61,3 @@ isAntiNodeB p nodes = length normalDistances < length distances || p `elem` node
   where
     distances = filter (/= V2 0 0) $ map (p -) nodes
     normalDistances = nub $ map normalize distances
-
-normalize :: Point -> Point
-normalize (V2 x y) = V2 (x `div` divisor) (y `div` divisor)
-  where
-    divisor = gcd x y

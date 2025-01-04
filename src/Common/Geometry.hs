@@ -88,3 +88,8 @@ allOrthogonalNeighbours v = S.fromList $ map (v +) allOrthogonalDirections
 
 gridOrthogonalNeighbours :: Grid -> Point -> Grid
 gridOrthogonalNeighbours grid point = M.restrictKeys grid $ allOrthogonalNeighbours point
+
+normalize :: Point -> Point
+normalize (V2 x y) = V2 (x `div` divisor) (y `div` divisor)
+  where
+    divisor = gcd x y
