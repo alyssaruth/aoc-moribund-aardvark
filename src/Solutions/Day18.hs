@@ -102,9 +102,10 @@ findBlockage minBytes maxBytes input
   | otherwise = findBlockage bytes maxBytes input
   where
     bytes = (minBytes + maxBytes) `div` 2
-    finishedRoutes = traceShow ("Testing " ++ show bytes) $ iterateRoutes M.empty [startingRoute bytes input]
+    finishedRoutes = iterateRoutes M.empty [startingRoute bytes input]
 
-part2 :: [Point] -> Point
-part2 input = input !! blockageIndex
+part2 :: [Point] -> String
+part2 input = show x ++ "," ++ show y
   where
     blockageIndex = findBlockage aBytes (length input) input
+    V2 x y = input !! blockageIndex

@@ -7,6 +7,7 @@ import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
   )
+import Common.BinaryUtils (pad0)
 import Control.Exception (SomeException)
 import Control.Lens (imap)
 import Data.Bits (xor, (.&.), (.|.))
@@ -21,7 +22,6 @@ import Debug.Trace (traceShow)
 import Numeric (showIntAtBase)
 import Text.Parser.Char (alphaNum)
 import Text.Trifecta (Parser, integer, letter, many, some, string, token, try)
-import Common.BinaryUtils (pad0)
 
 type Wire = String
 
@@ -106,18 +106,21 @@ _ `choose` 0 = [[]]
 fixAdder :: [WireEquation] -> [Wire] -> [Wire]
 fixAdder equations wiresSwapped
   | isNothing result = wiresSwapped
-  | otherwise = traceShow ("Failed at depth " ++ show result) $ fixAdder newEquations (wiresSwapped ++ newWires)
+  | otherwise = traceShow ("Failed at depth " ++ show (fromJust result)) $ fixAdder newEquations (wiresSwapped ++ newWires)
   where
     maxDepth = calculateMaxDepth equations
     result = verifyAdder 0 maxDepth equations
     (newEquations, newWires) = fixDepth equations (fromMaybe 0 result) wiresSwapped
 
 fixDepth :: [WireEquation] -> Int -> [Wire] -> ([WireEquation], [Wire])
-fixDepth equations depth wiresPreviouslySwapped = traceShow ("Swapped wires " ++ show swappedWires) (fixedMachine, swappedWires)
+fixDepth equations depth wiresPreviouslySwapped 
+  | null correctSwaps = error ("No suitable swap found to fix depth " ++ show depth)
+  | otherwise = traceShow ("Swapped wires " ++ show swappedWires) (fixedMachine, swappedWires)
   where
     swapsToTest = possibleSwaps $ swappableWires equations depth wiresPreviouslySwapped
     sortedSwapsToTest = sortOn (Data.Ord.Down . (\[a, b] -> includesWires [makeWire "z" depth] a || includesWires [makeWire "z" depth] b)) swapsToTest
-    correctSwap = traceShow ("Testing " ++ show (length swapsToTest) ++ " swaps") $ head $ filter (testSwap equations (depth + 1)) sortedSwapsToTest
+    correctSwaps = traceShow ("Testing " ++ show (length swapsToTest) ++ " swaps") $ filter (testSwap equations (depth + 1)) sortedSwapsToTest
+    correctSwap = head correctSwaps
     swappedWires = map destinationWire correctSwap
     fixedMachine = performSwap equations correctSwap
 
@@ -175,25 +178,17 @@ testPasses equations (x, y) = performAddition equations x y == Just (x + y)
 
 prepareTestSums :: Int -> [(Int, Int)]
 prepareTestSums depth =
-  getSimpleSums depth
-    ++ [ (minValue `div` 2, maxValue `div` 2),
-         (minValue `div` 2, minValue `div` 2),
-         (middleValue `div` 2, middleValue `div` 2),
-         (middleValue `div` 2, middleValue `div` 3)
-       ]
+  [ (minValue, 0),
+    (minValue, maxValue - minValue),
+    (minValue `div` 2, maxValue `div` 2),
+    (minValue `div` 2, minValue `div` 2),
+    (middleValue `div` 2, middleValue `div` 2),
+    (middleValue `div` 2, middleValue `div` 3)
+  ]
   where
     minValue = 2 ^ depth
     maxValue = 2 ^ (depth + 1) - 1
     middleValue = (minValue + maxValue) `div` 2
-
-getSimpleSums :: Int -> [(Int, Int)]
-getSimpleSums depth
-  | maxValue - minValue <= maxSums = map (\x -> (minValue, x)) [0 .. maxValue - minValue]
-  | otherwise = map (\x -> (minValue, x)) [0 .. (maxSums `div` 2)]
-  where
-    maxSums = 20
-    minValue = 2 ^ depth
-    maxValue = 2 ^ (depth + 1) - 1
 
 -- Set up inputs for X and Y to perform a specific addition
 performAddition :: [WireEquation] -> Int -> Int -> Maybe Int
@@ -207,7 +202,10 @@ base2 :: Int -> String
 base2 x = showIntAtBase 2 intToDigit x ""
 
 calculateMaxDepth :: [WireEquation] -> Int
-calculateMaxDepth machine = 1 + maximum [read $ filter isDigit wire | wire <- map leftWire machine, "x" `isPrefixOf` wire]
+calculateMaxDepth machine = maximum [read $ filter isDigit wire | wire <- allInputWires machine, "x" `isPrefixOf` wire]
+
+allInputWires :: [WireEquation] -> [Wire]
+allInputWires equations = map leftWire equations ++ map rightWire equations
 
 prepareWires :: String -> Int -> String -> M.Map Wire Int
 prepareWires prefix maxDepth binaryValue = M.fromList newValues

@@ -9,10 +9,10 @@ import qualified Common.MapUtils as S
 import Control.Lens
 import Data.Char (digitToInt)
 import Data.List (find)
-import Data.List.Split
+import Data.List.Split (chunksOf)
 import Data.Maybe
 import Data.Sequence as S (Seq, drop, dropWhileL, elemIndexL, findIndicesL, fromList, index, length, mapWithIndex, replicate, reverse, take, update, (><))
-import Text.Trifecta (CharParsing (anyChar), Parser, many)
+import Text.Trifecta (Parser, alphaNum, many)
 
 data File = File {fileId :: Int, size :: Int}
   deriving (Show, Eq, Ord)
@@ -27,7 +27,7 @@ aoc9 = do
   printSolutions 9 'B' $ MkAoCSolution parseInput part2
 
 parseInput :: Parser String
-parseInput = many anyChar
+parseInput = many alphaNum
 
 part1 :: String -> Int
 part1 = checksum . doCompression . parseMap
