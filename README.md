@@ -19,7 +19,6 @@ Some of the solutions aren't terrible fast... below are those that are slower th
 | 16  | 6.20  |
 | 20  | 5.56  |
 | 17  | 2.72  |
-| 25  | 1.67  |
 | 19  | 1.50  |
 | 21  | 1.14  |
 
