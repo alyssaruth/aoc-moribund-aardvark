@@ -28,6 +28,7 @@ import Solutions.Day8 (aoc8)
 import Solutions.Day9 (aoc9)
 import Data.Void (Void)
 import System.TimeIt (timeIt, timeItNamed)
+import Text.Printf (printf)
 
 funs =
   [ aoc1,
@@ -66,4 +67,5 @@ runSolutions fns
   | length fns == 1 = timeIt $ head fns
   | otherwise = do
       timeIt $ head fns
+      printf "\n"
       runSolutions $ tail fns
