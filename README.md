@@ -22,7 +22,6 @@ Some of the solutions aren't terrible fast... below are those that are slower th
 | 25  | 1.67  |
 | 19  | 1.50  |
 | 21  | 1.14  |
-| 5   | 1.04  |
 
 
 ## Running the solutions
@@ -30,7 +29,6 @@ Some of the solutions aren't terrible fast... below are those that are slower th
 To run:
 ```
 ❯ stack ghci
-...
 
 # Individual solution
 λ> aoc1

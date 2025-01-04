@@ -7,8 +7,8 @@ import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
   )
-import Data.List
-import Data.Maybe
+import Data.List (partition, sortBy)
+import qualified Data.Set as S
 import Text.Trifecta
   ( Parser,
     Parsing (eof, try),
@@ -29,38 +29,36 @@ type Page = [Integer]
 
 type PageRule = (Integer, Integer)
 
-parseInput :: Parser ([PageRule], [Page])
+parseInput :: Parser (S.Set PageRule, S.Set Page)
 parseInput = do
   pageRules <- many $ try parsePageRule
   pages <- manyTill (commaSep integer) eof
-  pure (pageRules, pages)
+  pure (S.fromList pageRules, S.fromList pages)
 
 parsePageRule :: Parser (Integer, Integer)
 parsePageRule = do
   [a, b] <- sepBy integer (char '|')
   pure (a, b)
 
-part1 :: ([PageRule], [Page]) -> Integer
-part1 (rules, pages) = sum $ map middleElement $ filter (`elem` pages) sortedPages
-  where
-    sortedPages = map (sortBy (ruleSort rules)) pages
+part1 :: (S.Set PageRule, S.Set Page) -> Integer
+part1 = middlePageSum True
 
-ruleSort :: [PageRule] -> Integer -> Integer -> Ordering
-ruleSort rules x y = compare (tupleIndex x relevantRule) (tupleIndex y relevantRule)
-  where
-    relevantRule = fromMaybe (-1, -1) $ find (containsBoth x y) rules
+part2 :: (S.Set PageRule, S.Set Page) -> Integer
+part2 = middlePageSum False
 
-containsBoth :: Integer -> Integer -> PageRule -> Bool
-containsBoth x y rule = rule == (x, y) || rule == (y, x)
-
-tupleIndex :: Integer -> (Integer, Integer) -> Maybe Int
-tupleIndex x (a, b) = elemIndex x [a, b]
+ruleSort :: S.Set PageRule -> Integer -> Integer -> Ordering
+ruleSort rules x y
+  | (x, y) `S.member` rules = LT
+  | (y, x) `S.member` rules = GT
+  | otherwise = EQ
 
 middleElement :: Page -> Integer
-middleElement [x] = x
-middleElement xs = middleElement $ init $ tail xs
+middleElement xs = xs !! (length xs `div` 2)
 
-part2 :: ([PageRule], [Page]) -> Integer
-part2 (rules, pages) = sum $ map middleElement $ filter (not . (`elem` pages)) sortedPages
+middlePageSum :: Bool -> (S.Set PageRule, S.Set Page) -> Integer
+middlePageSum sorted (rules, pages)
+  | sorted = sum $ map middleElement sortedPages
+  | otherwise = sum $ map middleElement unsortedPages
   where
-    sortedPages = map (sortBy (ruleSort rules)) pages
+    correctPages = S.toList $ S.map (sortBy (ruleSort rules)) pages
+    (sortedPages, unsortedPages) = partition (`S.member` pages) correctPages
