@@ -5,14 +5,14 @@ Solutions to 2024's Advent of Code, written in Haskell. Forked from RaphaelColma
 
 ## Benchmarking
 
-Some of the solutions aren't terrible fast... below are those that are slower than 1s when run via GHCI:
+Some of the solutions aren't terribly fast... below are those that are slower than 1s when run via GHCI:
 
 | Day | Time (s) |
 |-----|----------|
 | 9   | 62.46 |
 | 22  | 47.47 |
-| 24  | 27.00 |
 | 6   | 13.07 |
+| 24  | 10.08 |
 | 7   | 9.56  |
 | 14  | 7.08  |
 | 15  | 6.57  |

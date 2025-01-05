@@ -1,23 +1,17 @@
-{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-
-{-# HLINT ignore "Use tuple-section" #-}
-module Solutions.Day24 where
+module Solutions.Day24 (aoc24) where
 
 import Common.AoCSolutions
   ( AoCSolution (MkAoCSolution),
     printSolutions,
   )
 import Common.BinaryUtils (pad0)
-import Control.Exception (SomeException)
 import Control.Lens (imap)
 import Data.Bits (xor, (.&.), (.|.))
 import Data.Char (digitToInt, intToDigit, isDigit)
-import Data.Either (isRight)
-import Data.List (intercalate, isPrefixOf, sort, sortBy, sortOn, (\\))
+import Data.List (intercalate, isPrefixOf, sort, sortOn, (\\))
 import qualified Data.Map as M
-import Data.Maybe (fromJust, fromMaybe, isJust, isNothing)
+import Data.Maybe (fromJust, fromMaybe, isNothing)
 import qualified Data.Ord
-import Data.Set (Set, empty, fromList, intersection, member, union)
 import Debug.Trace (traceShow)
 import Numeric (showIntAtBase)
 import Text.Parser.Char (alphaNum)
@@ -113,16 +107,23 @@ fixAdder equations wiresSwapped
     (newEquations, newWires) = fixDepth equations (fromMaybe 0 result) wiresSwapped
 
 fixDepth :: [WireEquation] -> Int -> [Wire] -> ([WireEquation], [Wire])
-fixDepth equations depth wiresPreviouslySwapped 
+fixDepth equations depth wiresPreviouslySwapped
   | null correctSwaps = error ("No suitable swap found to fix depth " ++ show depth)
   | otherwise = traceShow ("Swapped wires " ++ show swappedWires) (fixedMachine, swappedWires)
   where
-    swapsToTest = possibleSwaps $ swappableWires equations depth wiresPreviouslySwapped
-    sortedSwapsToTest = sortOn (Data.Ord.Down . (\[a, b] -> includesWires [makeWire "z" depth] a || includesWires [makeWire "z" depth] b)) swapsToTest
-    correctSwaps = traceShow ("Testing " ++ show (length swapsToTest) ++ " swaps") $ filter (testSwap equations (depth + 1)) sortedSwapsToTest
+    swapsToTest = prioritisedSwaps depth $ possibleSwaps $ swappableWires equations depth wiresPreviouslySwapped
+    correctSwaps = traceShow ("Testing " ++ show (length swapsToTest) ++ " swaps") $ filter (testSwap equations (depth + 1)) swapsToTest
     correctSwap = head correctSwaps
     swappedWires = map destinationWire correctSwap
     fixedMachine = performSwap equations correctSwap
+
+-- Prioritise swaps that involve zN or connected wires - these are more likely to be relevant to us
+prioritisedSwaps :: Int -> [[WireEquation]] -> [[WireEquation]]
+prioritisedSwaps depth swaps = sortOn (Data.Ord.Down . (\[a, b] -> includesWires interestingWires a || includesWires interestingWires b)) swaps
+  where
+    zWire = makeWire "z" depth
+    znEquation = head $ filter ((== zWire) . destinationWire) $ map head swaps
+    interestingWires = [zWire, leftWire znEquation, rightWire znEquation]
 
 -- If we've failed at depth N, then we know that x0...xn-1, y0...yn-1 and z0...zn-1 are wired up right already
 -- Likewise, anything immediately connected to x0...xn-2 and y0...yn-2, because even remainders of these are definitely working
@@ -179,16 +180,13 @@ testPasses equations (x, y) = performAddition equations x y == Just (x + y)
 prepareTestSums :: Int -> [(Int, Int)]
 prepareTestSums depth =
   [ (minValue, 0),
+    (minValue - 1, 1),
     (minValue, maxValue - minValue),
-    (minValue `div` 2, maxValue `div` 2),
-    (minValue `div` 2, minValue `div` 2),
-    (middleValue `div` 2, middleValue `div` 2),
-    (middleValue `div` 2, middleValue `div` 3)
+    (minValue `div` 2, maxValue `div` 2)
   ]
   where
     minValue = 2 ^ depth
     maxValue = 2 ^ (depth + 1) - 1
-    middleValue = (minValue + maxValue) `div` 2
 
 -- Set up inputs for X and Y to perform a specific addition
 performAddition :: [WireEquation] -> Int -> Int -> Maybe Int
