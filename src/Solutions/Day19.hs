@@ -35,7 +35,7 @@ updateMapForDesign knownCombos towels design
   | design `elem` towels = M.insert design (1 + newSum) knownCombos
   | otherwise = M.insert design newSum knownCombos
   where
-    potentialTowels = [towel | towel <- towels, towel `isPrefixOf` design]
+    potentialTowels = filter (`isPrefixOf` design) towels
     subDesigns = map (subDesign design) potentialTowels
     results = mapMaybe (`M.lookup` knownCombos) subDesigns
     newSum = sum results
@@ -58,7 +58,7 @@ processDesigns towels designs map = processDesigns towels (tail designs) updated
     updatedMap = processDesignBackwards map towels (head designs) 1
 
 countDesignCombos :: ([Towel], [Design]) -> [Int]
-countDesignCombos (towels, designs) = mapMaybe (`M.lookup` allCounts) designs
+countDesignCombos (towels, designs) = map (allCounts M.!) designs
   where
     allCounts = processDesigns towels designs M.empty
 

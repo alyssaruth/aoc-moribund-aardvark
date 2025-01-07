@@ -8,7 +8,7 @@ import Common.AoCSolutions
     printSolutions,
   )
 import Data.Bits (xor)
-import Data.List (genericLength, isPrefixOf)
+import Data.List (genericLength, isPrefixOf, isSuffixOf)
 import Data.List.Split (chunksOf)
 import Text.Trifecta (CharParsing (string), Parser, commaSep, integer)
 
@@ -121,13 +121,7 @@ part2 comp = findCorrectA $ updateA comp 1
 findCorrectA :: Computer -> Integer
 findCorrectA comp
   | outputs result == program result = a comp
-  | tailMatches result = findCorrectA $ updateA comp (a comp * 8)
+  | outputs result `isSuffixOf` program result = findCorrectA $ updateA comp (a comp * 8)
   | otherwise = findCorrectA $ updateA comp (a comp + 1)
   where
     result = runProgram comp
-
-tailMatches :: Computer -> Bool
-tailMatches comp = outputs comp == programTail
-  where
-    outputLength = length $ outputs comp
-    programTail = drop (length (program comp) - outputLength) (program comp)

@@ -13,6 +13,7 @@ import qualified Data.Map as M
 import Data.Set as S (Set, insert, null, toList, unions, (\\))
 import Linear (V2 (..))
 import Text.Trifecta (CharParsing (anyChar), Parser, many)
+import Data.List (partition)
 
 data Route = Route {visited :: Set Position, score :: Int, position :: Position, direction :: Direction}
 
@@ -32,18 +33,17 @@ startingRoute g = Route (insert position (walls g)) 0 position (V2 1 0)
 iterateRoutes :: M.Map Position Int -> Position -> [Route] -> [Route]
 iterateRoutes scoreTable goal routes
   | Prelude.null unfinishedRoutes = routes
-  | otherwise = iterateRoutes newScoreTable goal prunedRoutes
+  | otherwise = iterateRoutes newScoreTable goal (finishedRoutes ++ prunedRoutes)
   where
-    unfinishedRoutes = [route | route <- routes, position route /= goal]
-    newRoutes = concatMap (iterateRoute goal) routes
+    (finishedRoutes, unfinishedRoutes) = partition (\route -> position route == goal) routes
+    newRoutes = concatMap iterateRoute unfinishedRoutes
     prunedRoutes = pruneRoutes scoreTable newRoutes
     newScoreTable = updateScores goal scoreTable prunedRoutes
 
 updateScores :: Position -> M.Map Position Int -> [Route] -> M.Map Position Int
 updateScores goal scoreTable routes = M.union (M.fromList scorePairs) scoreTable
   where
-    unfinishedRoutes = [route | route <- routes, position route /= goal]
-    scorePairs = map scorePair unfinishedRoutes
+    scorePairs = map scorePair routes
 
 pruneRoutes :: M.Map Position Int -> [Route] -> [Route]
 pruneRoutes map routes = concat $ M.elems $ M.map minimumRoutes $ associateBy hashKey filtered
@@ -64,9 +64,8 @@ highscore map route = M.findWithDefault 10000000000 (position route) map
 scorePair :: Route -> (Position, Int)
 scorePair route = (position route, score route)
 
-iterateRoute :: Position -> Route -> [Route]
-iterateRoute goal route
-  | position route == goal = [route]
+iterateRoute :: Route -> [Route]
+iterateRoute route
   | S.null validNeighbours = []
   | otherwise = map (updateRoute route) $ S.toList validNeighbours
   where
