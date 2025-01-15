@@ -8,7 +8,7 @@ import Common.ListUtils (mapIf)
 import qualified Common.MapUtils as S
 import Control.Lens
 import Data.Char (digitToInt)
-import Data.List (find)
+import Data.List (find, delete)
 import Data.List.Split (chunksOf)
 import Data.Maybe
 import Data.Sequence as S (Seq, drop, dropWhileL, elemIndexL, findIndicesL, fromList, index, length, mapWithIndex, replicate, reverse, take, update, (><), findIndexL)
@@ -22,7 +22,7 @@ data File = File {fileId :: Int, size :: Int}
 
 type DiskMap = Seq (Maybe Int)
 
-data DiskState = DiskState {diskMap :: DiskMap, gapGroups :: [[Int]], fileStarts :: M.Map (Maybe Int) Int}
+data DiskState = DiskState {gapGroups :: [[Int]], fileStarts :: M.Map (Maybe Int) Int, workingChecksum :: Int}
 
 aoc9 :: IO ()
 aoc9 = do
@@ -60,49 +60,47 @@ compress gaps x
   | otherwise = compress (tail gaps) $ S.drop 1 $ S.update (S.length x - 1 - head gaps) (S.index x 0) x -- Move current element into furthest gap
 
 part2 :: String -> Int
-part2 s = checksum $ diskMap $ foldr tryMoveFile diskState $ imap parseFile $ chunksOf 2 $ map digitToInt s
+part2 s = workingChecksum $ foldr tryMoveFile diskState $ imap parseFile $ chunksOf 2 $ map digitToInt s
   where
     startingMap = parseMap s
     gapGroups = groupGaps $ S.findIndicesL isNothing startingMap
-    fileStarts = traceShow ("Grouped gaps " ++ show (Prelude.length gapGroups)) M.fromList $ Prelude.reverse $ toList $ mapWithIndex (\i fileId -> (fileId, i)) startingMap
-    diskState = DiskState startingMap gapGroups fileStarts
+    fileStarts = M.fromList $ Prelude.reverse $ toList $ mapWithIndex (\i fileId -> (fileId, i)) startingMap
+    diskState = DiskState gapGroups fileStarts 0
 
 -- [1, 2, 5, 6, 7, 11, 15, 16] -> [[1, 2], [5, 6, 7], [11], [15, 16]]
 groupGaps :: [Int] -> [[Int]]
-groupGaps = foldl processGap []
+groupGaps gaps = makeGapGroups gaps [] []
 
-processGap :: [[Int]] -> Int -> [[Int]]
-processGap [] gap = [[gap]]
-processGap gapGroups gap = if gap == last currentGroup + 1 then init gapGroups ++ [currentGroup ++ [gap]] else gapGroups ++ [[gap]]
-  where
-    currentGroup = last gapGroups
+makeGapGroups :: [Int] -> [[Int]] -> [Int] -> [[Int]]
+makeGapGroups [] gapGroups currentGroup = gapGroups ++ [currentGroup]
+makeGapGroups (nextGap:remainingGaps) gapGroups currentGroup
+  | null currentGroup = makeGapGroups remainingGaps gapGroups [nextGap]
+  | last currentGroup == nextGap - 1 = makeGapGroups remainingGaps gapGroups (currentGroup ++ [nextGap])
+  | otherwise = makeGapGroups remainingGaps (gapGroups ++ [currentGroup]) [nextGap]
 
 parseFile :: Int -> [Int] -> File
 parseFile index (x : xs) = File index x
 
 tryMoveFile :: File -> DiskState -> DiskState
-tryMoveFile f (DiskState diskMap gapGroups fileStarts)
-  | isNothing targetGap = DiskState diskMap gapGroups fileStarts
-  | head (fromJust targetGap) > fileStartLocation = DiskState diskMap gapGroups fileStarts
-  | otherwise = moveFile f (fromJust targetGap) fileLocations (DiskState diskMap gapGroups fileStarts)
+tryMoveFile f (DiskState gapGroups fileStarts checksum)
+  | isNothing targetGap = DiskState gapGroups fileStarts newChecksum
+  | head (fromJust targetGap) > fileStartLocation = DiskState gapGroups fileStarts newChecksum
+  | otherwise = moveFile f (fromJust targetGap) fileLocations (DiskState gapGroups fileStarts checksum)
   where
-    targetGap = find (viableGap f) gapGroups
     fileStartLocation = fileStarts M.! Just (fileId f)
+    targetGap = find (viableGap f fileStartLocation) gapGroups
     fileLocations = Prelude.take (size f) [fileStartLocation..]
+    newChecksum = checksum + sum (map (* fileId f) fileLocations)
 
 moveFile :: File -> [Int] -> [Int] -> DiskState -> DiskState
-moveFile (File fileId size) targetGap fileLocations (DiskState diskMap gapGroups fileStarts) = DiskState updatedMap updatedGroups fileStarts
+moveFile (File fileId size) targetGap fileLocations (DiskState gapGroups fileStarts checksum) 
+  | null remainingGap = DiskState (delete targetGap gapGroups) fileStarts newChecksum
+  | otherwise = DiskState updatedGroups fileStarts newChecksum
   where
-    updatedMap = updateAll (Prelude.take size targetGap) (Just fileId) $ updateAll fileLocations Nothing diskMap
+    newIndices = Prelude.take size targetGap
     remainingGap = Prelude.drop size targetGap
     updatedGroups = mapIf (== targetGap) (const remainingGap) gapGroups
+    newChecksum = checksum + sum (map (*fileId) newIndices)
 
-updateAll :: [Int] -> Maybe Int -> DiskMap -> DiskMap
-updateAll indices newValue seq = start >< middle >< end
-  where
-    start = S.take (head indices) seq
-    middle = S.replicate (Prelude.length indices) newValue
-    end = S.drop (last indices + 1) seq
-
-viableGap :: File -> [Int] -> Bool
-viableGap f gap = Prelude.length gap >= size f
+viableGap :: File -> Int -> [Int] -> Bool
+viableGap f currentLocation gap = Prelude.length gap >= size f

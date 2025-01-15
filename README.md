@@ -9,13 +9,13 @@ Some of the solutions aren't terribly fast... below are those that are slower th
 
 | Day | Time (s) |
 |-----|----------|
-| 9   | 62.46 |
 | 22  | 47.47 |
 | 6   | 13.07 |
 | 24  | 10.08 |
 | 14  | 7.08  |
 | 15  | 6.57  |
 | 20  | 5.56  |
+| 9   | 3.56  |
 | 17  | 2.72  |
 | 16  | 1.83  |
 | 19  | 1.50  |
