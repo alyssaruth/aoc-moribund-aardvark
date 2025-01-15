@@ -11,15 +11,18 @@ import Data.Char (digitToInt)
 import Data.List (find)
 import Data.List.Split (chunksOf)
 import Data.Maybe
-import Data.Sequence as S (Seq, drop, dropWhileL, elemIndexL, findIndicesL, fromList, index, length, mapWithIndex, replicate, reverse, take, update, (><))
+import Data.Sequence as S (Seq, drop, dropWhileL, elemIndexL, findIndicesL, fromList, index, length, mapWithIndex, replicate, reverse, take, update, (><), findIndexL)
 import Text.Trifecta (Parser, alphaNum, many)
+import qualified Data.Map as M
+import Data.Foldable (toList)
+import Debug.Trace (traceShow)
 
 data File = File {fileId :: Int, size :: Int}
   deriving (Show, Eq, Ord)
 
 type DiskMap = Seq (Maybe Int)
 
-data DiskState = DiskState {diskMap :: DiskMap, gapGroups :: [[Int]]}
+data DiskState = DiskState {diskMap :: DiskMap, gapGroups :: [[Int]], fileStarts :: M.Map (Maybe Int) Int}
 
 aoc9 :: IO ()
 aoc9 = do
@@ -59,7 +62,10 @@ compress gaps x
 part2 :: String -> Int
 part2 s = checksum $ diskMap $ foldr tryMoveFile diskState $ imap parseFile $ chunksOf 2 $ map digitToInt s
   where
-    diskState = DiskState (parseMap s) (groupGaps $ S.findIndicesL isNothing (parseMap s))
+    startingMap = parseMap s
+    gapGroups = groupGaps $ S.findIndicesL isNothing startingMap
+    fileStarts = traceShow ("Grouped gaps " ++ show (Prelude.length gapGroups)) M.fromList $ Prelude.reverse $ toList $ mapWithIndex (\i fileId -> (fileId, i)) startingMap
+    diskState = DiskState startingMap gapGroups fileStarts
 
 -- [1, 2, 5, 6, 7, 11, 15, 16] -> [[1, 2], [5, 6, 7], [11], [15, 16]]
 groupGaps :: [Int] -> [[Int]]
@@ -75,16 +81,17 @@ parseFile :: Int -> [Int] -> File
 parseFile index (x : xs) = File index x
 
 tryMoveFile :: File -> DiskState -> DiskState
-tryMoveFile f (DiskState diskMap gapGroups)
-  | isNothing targetGap = DiskState diskMap gapGroups
-  | head (fromJust targetGap) > head fileLocations = DiskState diskMap gapGroups
-  | otherwise = moveFile f (fromJust targetGap) fileLocations (DiskState diskMap gapGroups)
+tryMoveFile f (DiskState diskMap gapGroups fileStarts)
+  | isNothing targetGap = DiskState diskMap gapGroups fileStarts
+  | head (fromJust targetGap) > fileStartLocation = DiskState diskMap gapGroups fileStarts
+  | otherwise = moveFile f (fromJust targetGap) fileLocations (DiskState diskMap gapGroups fileStarts)
   where
     targetGap = find (viableGap f) gapGroups
-    fileLocations = S.findIndicesL (== Just (fileId f)) diskMap
+    fileStartLocation = fileStarts M.! Just (fileId f)
+    fileLocations = Prelude.take (size f) [fileStartLocation..]
 
 moveFile :: File -> [Int] -> [Int] -> DiskState -> DiskState
-moveFile (File fileId size) targetGap fileLocations (DiskState diskMap gapGroups) = DiskState updatedMap updatedGroups
+moveFile (File fileId size) targetGap fileLocations (DiskState diskMap gapGroups fileStarts) = DiskState updatedMap updatedGroups fileStarts
   where
     updatedMap = updateAll (Prelude.take size targetGap) (Just fileId) $ updateAll fileLocations Nothing diskMap
     remainingGap = Prelude.drop size targetGap
